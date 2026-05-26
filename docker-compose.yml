@@ -5,16 +5,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ats-api
+    restart: unless-stopped
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:SUA_SENHA_POSTGRES@host.docker.internal:5439/ats_db
-      REDIS_URL: redis://host.docker.internal:6379/0
-      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
-      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
-      OLLAMA_BASE_URL: http://host.docker.internal:11999
     ports:
-      - "8105:8000"  # <--- Nova porta da API (Antiga: 8095)
+      - "8105:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -31,15 +26,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ats-celery-worker
+    restart: unless-stopped
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:SUA_SENHA_POSTGRES@host.docker.internal:5439/ats_db
-      REDIS_URL: redis://host.docker.internal:6379/0
-      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
-      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
-      OLLAMA_BASE_URL: http://host.docker.internal:11999
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -93,12 +83,15 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
-        VITE_API_KEY: ${VITE_API_KEY:-ats-dev-api-key-change-in-production}
+        VITE_API_KEY: ${VITE_API_KEY:-${API_KEY:-ats-dev-api-key-change-in-production}}
+        VITE_API_DIRECT_URL: ${VITE_API_DIRECT_URL:-}
     container_name: ats-frontend
+    restart: unless-stopped
     ports:
-      - "8100:80"  # <--- Nova porta do Frontend (Antiga: 5175)
+      - "8100:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - ats-network
 

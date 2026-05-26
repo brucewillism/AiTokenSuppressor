@@ -10,12 +10,13 @@ from app.api.routes import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.exceptions import register_exception_handlers
-from app.core.logging import setup_logging
+from app.core.logging import get_logger, setup_logging
 from app.core.metrics import APP_INFO
 from app.core.redis_client import close_redis
 from app.middleware.rate_limit import PayloadLimitMiddleware, RateLimitMiddleware
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -23,8 +24,11 @@ async def lifespan(app: FastAPI):
     setup_logging()
     from app.core.init_db import setup_pgvector
 
-    await setup_pgvector()
-    await init_db()
+    try:
+        await setup_pgvector()
+        await init_db()
+    except Exception as exc:
+        logger.exception("startup_initialization_failed", error=str(exc))
     APP_INFO.info({"version": "1.0.0", "env": settings.app_env})
     yield
     await close_redis()

@@ -7,10 +7,12 @@ export interface ApiDisplayInfo {
   url: string;
   host: string;
   port: string;
+  directHealthUrl: string | null;
 }
 
 /** URL/host/porta exibidos na UI — espelha VITE_API_URL ou proxy /api no mesmo origin. */
 export function getApiDisplayInfo(): ApiDisplayInfo {
+  const directHealthUrl = getDirectHealthUrl();
   const base = API_BASE.trim();
 
   if (base.startsWith('http://') || base.startsWith('https://')) {
@@ -23,9 +25,10 @@ export function getApiDisplayInfo(): ApiDisplayInfo {
         url: base.replace(/\/$/, ''),
         host: parsed.hostname,
         port,
+        directHealthUrl,
       };
     } catch {
-      return { url: base, host: base, port: '—' };
+      return { url: base, host: base, port: '—', directHealthUrl };
     }
   }
 
@@ -37,10 +40,19 @@ export function getApiDisplayInfo(): ApiDisplayInfo {
       url: `${origin}${path}`,
       host: hostname,
       port: resolvedPort,
+      directHealthUrl,
     };
   }
 
-  return { url: path, host: 'localhost', port: '8000' };
+  return { url: path, host: 'localhost', port: '8000', directHealthUrl };
+}
+
+function getDirectHealthUrl(): string | null {
+  const configured = import.meta.env.VITE_API_DIRECT_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, '') + '/health';
+  }
+  return null;
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

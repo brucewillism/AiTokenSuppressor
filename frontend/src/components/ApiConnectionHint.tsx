@@ -5,7 +5,7 @@ interface ApiConnectionHintProps {
 }
 
 export default function ApiConnectionHint({ error }: ApiConnectionHintProps) {
-  const { url, host, port } = getApiDisplayInfo();
+  const { url, host, port, directHealthUrl } = getApiDisplayInfo();
 
   return (
     <div className="text-center py-20 max-w-lg mx-auto">
@@ -21,11 +21,29 @@ export default function ApiConnectionHint({ error }: ApiConnectionHintProps) {
         {' · '}
         Porta: <span className="font-mono">{port}</span>
       </p>
+      {directHealthUrl && (
+        <p className="text-gray-500 mt-2 text-xs">
+          Teste direto da API (sem proxy):{' '}
+          <a
+            href={directHealthUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-400 font-mono break-all hover:underline"
+          >
+            {directHealthUrl}
+          </a>
+        </p>
+      )}
       <p className="text-gray-600 mt-4 text-xs leading-relaxed px-4">
         Pode ser o contêiner da API ainda inicializando, serviço parado ou bloqueio de
         firewall na porta <span className="font-mono text-gray-500">{port}</span>.
-        Confirme também que <code className="text-gray-500">VITE_API_URL</code> no build
-        aponta para o backend correto.
+        Confirme que <code className="text-gray-500">DATABASE_URL</code> e{' '}
+        <code className="text-gray-500">API_KEY</code> no arquivo <code className="text-gray-500">.env</code>{' '}
+        estão corretos (o compose não deve sobrescrever com placeholders).
+      </p>
+      <p className="text-gray-600 mt-2 text-xs leading-relaxed px-4">
+        Na VPS: <code className="text-gray-500">docker compose ps</code> e{' '}
+        <code className="text-gray-500">docker compose logs api --tail 50</code>
       </p>
     </div>
   );
