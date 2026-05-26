@@ -1,0 +1,177 @@
+{
+  "info": {
+    "name": "AI Token Suppressor API",
+    "description": "Complete API collection for AI Token Suppressor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "api_key", "value": "ats-dev-api-key-change-in-production"}
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {"name": "Health Check", "request": {"method": "GET", "url": "{{base_url}}/health"}},
+        {"name": "Full Health", "request": {"method": "GET", "url": "{{base_url}}/health/full"}},
+        {"name": "Redis Health", "request": {"method": "GET", "url": "{{base_url}}/health/redis"}},
+        {"name": "Postgres Health", "request": {"method": "GET", "url": "{{base_url}}/health/postgres"}},
+        {"name": "Ollama Health", "request": {"method": "GET", "url": "{{base_url}}/health/ollama"}}
+      ]
+    },
+    {
+      "name": "Optimization",
+      "item": [
+        {
+          "name": "Optimize Prompt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n    {\"role\": \"user\", \"content\": \"Explain quantum computing in detail with examples.\"}\n  ],\n  \"strategy\": \"balanced\",\n  \"target_model\": \"claude-3-5-sonnet\",\n  \"use_memory\": true\n}"
+            },
+            "url": "{{base_url}}/optimize"
+          }
+        },
+        {
+          "name": "Compress Prompt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\"role\": \"user\", \"content\": \"Please note that it is important to remember that we need to implement the API endpoint.\"}\n  ],\n  \"strategy\": \"aggressive\"\n}"
+            },
+            "url": "{{base_url}}/compress"
+          }
+        },
+        {
+          "name": "Analyze Prompt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [{\"role\": \"user\", \"content\": \"Refactor the authentication module with security best practices\"}],\n  \"target_model\": \"claude-3-5-sonnet\"\n}"
+            },
+            "url": "{{base_url}}/analyze"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "item": [
+        {
+          "name": "Save Memory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"User prefers Python with FastAPI for backend development\",\n  \"memory_type\": \"preference\",\n  \"user_id\": \"user-123\"\n}"
+            },
+            "url": "{{base_url}}/memory/save"
+          }
+        },
+        {
+          "name": "Search Memory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"backend framework preferences\",\n  \"user_id\": \"user-123\",\n  \"top_k\": 5\n}"
+            },
+            "url": "{{base_url}}/memory/search"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RAG",
+      "item": [
+        {
+          "name": "Ingest Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"AI Token Suppressor reduces LLM token consumption through compression, RAG, and semantic memory.\",\n  \"collection_id\": \"docs\",\n  \"source\": \"readme.md\"\n}"
+            },
+            "url": "{{base_url}}/rag/ingest"
+          }
+        },
+        {
+          "name": "Query RAG",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-API-Key", "value": "{{api_key}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"How does token suppression work?\",\n  \"collection_id\": \"docs\",\n  \"top_k\": 3\n}"
+            },
+            "url": "{{base_url}}/rag/query"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-API-Key", "value": "{{api_key}}"}],
+            "url": "{{base_url}}/stats?days=7"
+          }
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {"method": "GET", "url": "{{base_url}}/metrics"}
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": "{{base_url}}/auth/login"
+          }
+        }
+      ]
+    }
+  ]
+}
