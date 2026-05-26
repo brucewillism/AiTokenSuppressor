@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.models import RAGDocument
 from app.services.cache_service import CacheService
+from app.services.chunking_service import ChunkingService
 from app.services.ollama_service import OllamaService
 
 logger = get_logger(__name__)
@@ -22,47 +23,14 @@ class RAGService:
         self.db = db
         self.ollama = OllamaService()
         self.cache = CacheService()
+        self.chunking = ChunkingService()
         self.chunk_size = settings.rag_chunk_size
         self.chunk_overlap = settings.rag_chunk_overlap
         self.top_k = settings.rag_top_k
 
-    def intelligent_chunk(self, content: str) -> list[str]:
-        chunks: list[str] = []
-
-        code_blocks = re.split(r"(```[\s\S]*?```)", content)
-        for block in code_blocks:
-            if block.startswith("```"):
-                if len(block) <= self.chunk_size:
-                    chunks.append(block.strip())
-                else:
-                    chunks.extend(self._split_text(block, self.chunk_size))
-                continue
-
-            paragraphs = re.split(r"\n\n+", block)
-            current_chunk = ""
-
-            for para in paragraphs:
-                para = para.strip()
-                if not para:
-                    continue
-
-                if len(para) > self.chunk_size:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                        current_chunk = ""
-                    chunks.extend(self._split_text(para, self.chunk_size))
-                elif len(current_chunk) + len(para) + 2 <= self.chunk_size:
-                    current_chunk += ("\n\n" if current_chunk else "") + para
-                else:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                    overlap_text = current_chunk[-self.chunk_overlap:] if current_chunk else ""
-                    current_chunk = overlap_text + ("\n\n" if overlap_text else "") + para
-
-            if current_chunk.strip():
-                chunks.append(current_chunk.strip())
-
-        return [c for c in chunks if c.strip()]
+    def intelligent_chunk(self, content: str, language: str | None = None, use_ast: bool = True) -> list[str]:
+        chunks = self.chunking.chunk(content, language=language, use_ast=use_ast)
+        return [c.content for c in chunks]
 
     def _split_text(self, text: str, size: int) -> list[str]:
         chunks: list[str] = []
@@ -83,8 +51,10 @@ class RAGService:
         collection_id: str = "default",
         source: str | None = None,
         metadata: dict[str, Any] | None = None,
+        chunk_by_ast: bool = True,
+        language: str | None = None,
     ) -> int:
-        chunks = self.intelligent_chunk(content)
+        chunks = self.intelligent_chunk(content, language=language, use_ast=chunk_by_ast)
         created = 0
 
         for idx, chunk_text in enumerate(chunks):
@@ -224,16 +194,49 @@ class RAGService:
         return reranked
 
     async def build_rag_context(
-        self, query: str, collection_id: str = "default", top_k: int = 3
+        self,
+        query: str,
+        collection_id: str = "default",
+        top_k: int = 3,
+        adaptive: bool = False,
+        max_context_tokens: int | None = None,
     ) -> tuple[str, list[str]]:
-        results = await self.query(query, collection_id=collection_id, top_k=top_k)
+        effective_top_k = top_k
+        adaptive_params: dict[str, Any] = {}
+
+        if adaptive:
+            query_len = len(query.split())
+            if query_len < 10:
+                effective_top_k = min(top_k, 2)
+                adaptive_params["mode"] = "minimal"
+            elif query_len > 50:
+                effective_top_k = min(top_k + 2, 10)
+                adaptive_params["mode"] = "expanded"
+            else:
+                adaptive_params["mode"] = "balanced"
+
+        results = await self.query(query, collection_id=collection_id, top_k=effective_top_k)
         if not results:
             return "", []
 
         parts = ["[Retrieved context]"]
         sources: list[str] = []
+        token_budget = max_context_tokens or 4000
+        tokens_used = 0
+
         for doc, score in results:
-            parts.append(f"[Source: {doc.source or 'unknown'}, score: {score:.2f}]\n{doc.content}")
+            chunk_tokens = len(doc.content) // 4
+            if tokens_used + chunk_tokens > token_budget:
+                adaptive_params["truncated"] = True
+                break
+            meta = doc.metadata_ or {}
+            symbol = meta.get("symbol", "")
+            header = f"[Source: {doc.source or 'unknown'}, score: {score:.2f}"
+            if symbol:
+                header += f", symbol: {symbol}"
+            header += "]"
+            parts.append(f"{header}\n{doc.content}")
+            tokens_used += chunk_tokens
             if doc.source:
                 sources.append(doc.source)
 

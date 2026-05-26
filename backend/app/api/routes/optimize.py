@@ -28,12 +28,17 @@ async def optimize_prompt(
         messages=request.messages,
         strategy=request.strategy,
         target_model=request.target_model,
+        provider=request.provider,
         use_memory=request.use_memory,
         use_rag=request.use_rag,
+        use_hierarchical_memory=request.use_hierarchical_memory,
+        use_semantic_cache=request.use_semantic_cache,
         rag_collection=request.rag_collection,
         session_id=request.session_id,
         user_id=request.user_id,
         max_tokens=request.max_tokens,
+        check_semantic_loss=request.check_semantic_loss,
+        cost_budget_usd=request.cost_budget_usd,
     )
     return OptimizeResponse(**result)
 
@@ -49,6 +54,8 @@ async def compress_prompt(
         strategy=request.strategy,
         max_tokens=request.max_tokens,
         preserve_system=request.preserve_system,
+        target_model=request.target_model,
+        check_semantic_loss=request.check_semantic_loss,
     )
     return CompressResponse(**result)
 

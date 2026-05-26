@@ -8,7 +8,11 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.schemas import CompressionStrategy, Message
 from app.services.deduplication_service import DeduplicationService
+from app.services.hierarchical_summary_service import HierarchicalSummaryService
 from app.services.ollama_service import OllamaService
+from app.services.quality_guard_service import QualityGuardService
+from app.services.relevance_service import RelevanceService
+from app.services.specialized_compression_service import SpecializedCompressionService
 from app.services.token_service import TokenService
 from app.utils.helpers import (
     compact_json,
@@ -37,6 +41,10 @@ class CompressionService:
         self.token_service = TokenService()
         self.dedup_service = DeduplicationService()
         self.ollama = OllamaService()
+        self.specialized = SpecializedCompressionService()
+        self.quality_guard = QualityGuardService()
+        self.relevance = RelevanceService()
+        self.hierarchical_summary = HierarchicalSummaryService()
 
     def _get_config(self, strategy: CompressionStrategy) -> dict[str, Any]:
         return STRATEGY_CONFIG.get(strategy.value, STRATEGY_CONFIG["balanced"])
@@ -108,12 +116,13 @@ class CompressionService:
         )
 
         try:
-            summary = await self.ollama.summarize(old_text, max_words=200)
+            summary_result = await self.hierarchical_summary.summarize_messages(old_msgs)
+            summary = summary_result.final_summary
             summary_msg = {
                 "role": "system",
                 "content": f"[Conversation summary of {len(old_msgs)} earlier messages]: {summary}",
             }
-            operations.append(f"summarized_{len(old_msgs)}_messages")
+            operations.append(f"hierarchical_summary_{len(old_msgs)}_messages")
             return system_msgs + [summary_msg] + recent_msgs, operations
         except Exception as exc:
             logger.warning("summarize_history_failed", error=str(exc))
@@ -165,13 +174,17 @@ class CompressionService:
         msg_dicts, dedup_ops = await self.deduplicate_content(msg_dicts)
         operations.extend(dedup_ops)
 
+        protected, compressible = self.quality_guard.protect_during_compression(msg_dicts)
+        if protected:
+            operations.append(f"protected_{len(protected)}_critical_messages")
+
         if config["use_ollama"]:
             keep_recent = 8 if strategy == CompressionStrategy.CHAT_FOCUSED else 5
-            msg_dicts, sum_ops = await self.summarize_history(msg_dicts, keep_recent=keep_recent)
+            compressible, sum_ops = await self.summarize_history(compressible, keep_recent=keep_recent)
             operations.extend(sum_ops)
 
-        processed: list[dict] = []
-        for msg in msg_dicts:
+        processed: list[dict] = list(protected)
+        for msg in compressible:
             content = msg.get("content", "")
             if not isinstance(content, str):
                 processed.append(msg)
@@ -187,10 +200,15 @@ class CompressionService:
             if strategy == CompressionStrategy.CODE_FOCUSED:
                 result_content, code_ops = self.dedup_service.deduplicate_code_blocks(content)
                 msg_ops.extend(code_ops)
+                spec_content, spec_ops, _ct = self.specialized.compress_message(result_content)
+                result_content = spec_content
+                msg_ops.extend(spec_ops)
             else:
-                result_content, min_ops = self.minify_prompt(content)
+                spec_content, spec_ops, _ct = self.specialized.compress_message(content)
+                result_content = spec_content
+                msg_ops.extend(spec_ops)
+                result_content, min_ops = self.minify_prompt(result_content)
                 msg_ops.extend(min_ops)
-
                 result_content, json_ops = self.compact_json_in_text(result_content)
                 msg_ops.extend(json_ops)
 
@@ -219,6 +237,10 @@ class CompressionService:
 
         if max_tokens:
             processed = self._enforce_token_limit(processed, max_tokens, operations)
+
+        processed, quality_report = self.quality_guard.merge_with_compressed(msg_dicts, processed)
+        if quality_report.violations:
+            operations.extend(quality_report.violations)
 
         return processed, operations
 

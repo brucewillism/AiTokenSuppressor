@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from 'recharts';
 import { StatCard, LoadingSpinner, Zap, Activity, Database, BarChart3 } from '../components/StatCard';
+import ApiConnectionHint from '../components/ApiConnectionHint';
 import { api, Stats } from '../services/api';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#4f46e5'];
@@ -32,14 +33,7 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return <LoadingSpinner />;
-  if (error) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-red-400 text-lg">{error}</p>
-        <p className="text-gray-500 mt-2">Verifique se a API está rodando em localhost:8000</p>
-      </div>
-    );
-  }
+  if (error) return <ApiConnectionHint error={error} />;
   if (!stats) return null;
 
   const strategyData = Object.entries(stats.requests_by_strategy).map(([name, value]) => ({

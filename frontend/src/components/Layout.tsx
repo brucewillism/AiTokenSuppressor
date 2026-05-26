@@ -1,8 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, HeartPulse, FlaskConical, Zap } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, FlaskConical, Zap, BarChart2 } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/health', icon: HeartPulse, label: 'Health' },
   { to: '/playground', icon: FlaskConical, label: 'Playground' },
 ];

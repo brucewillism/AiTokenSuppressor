@@ -5,6 +5,7 @@ from typing import Any
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.services.ollama_service import OllamaService
+from app.services.relevance_service import RelevanceService
 from app.services.token_service import TokenService
 from app.utils.helpers import truncate_smart
 
@@ -16,49 +17,25 @@ class ContextManager:
     def __init__(self) -> None:
         self.token_service = TokenService()
         self.ollama = OllamaService()
+        self.relevance = RelevanceService()
         self.max_tokens = settings.max_context_tokens
         self.window_size = settings.sliding_window_size
 
     def calculate_relevance_score(self, message: dict, recent_context: str) -> float:
-        content = message.get("content", "")
-        if not isinstance(content, str):
-            return 0.5
-
-        score = 0.5
-        role = message.get("role", "")
-
-        if role == "system":
-            score += 0.3
-        if role == "user":
-            score += 0.2
-
-        if len(content) < 50:
-            score -= 0.1
-        if len(content) > 5000:
-            score += 0.1
-
-        important_keywords = [
-            "error", "bug", "fix", "implement", "requirement", "important",
-            "critical", "must", "deadline", "decision", "architecture",
-        ]
-        content_lower = content.lower()
-        keyword_hits = sum(1 for kw in important_keywords if kw in content_lower)
-        score += min(keyword_hits * 0.05, 0.25)
-
-        if "?" in content:
-            score += 0.1
-
-        return min(1.0, max(0.0, score))
+        return self.relevance.score_message(message, recent_context).total
 
     async def classify_irrelevant(self, messages: list[dict]) -> list[int]:
         irrelevant: list[int] = []
         for i, msg in enumerate(messages):
-            content = msg.get("content", "")
-            if not isinstance(content, str):
+            score = self.relevance.score_message(msg)
+            content = str(msg.get("content", "")).strip()
+            if score.is_critical:
                 continue
-            if len(content.strip()) < 10:
+            if len(content) < 10:
                 irrelevant.append(i)
-            if content.strip().lower() in ("ok", "thanks", "thank you", "got it", "sure", "yes", "no"):
+            elif content.lower() in ("ok", "thanks", "thank you", "got it", "sure", "yes", "no"):
+                irrelevant.append(i)
+            elif score.total < 0.15 and msg.get("role") != "system":
                 irrelevant.append(i)
         return irrelevant
 

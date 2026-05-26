@@ -11,6 +11,7 @@ from app.schemas import (
     MemorySearchRequest,
     MemorySearchResponse,
 )
+from app.services.context_graph_service import ContextGraphService
 from app.services.memory_service import MemoryService
 
 router = APIRouter(prefix="/memory", tags=["Memory"])
@@ -29,12 +30,15 @@ async def save_memory(
         session_id=request.session_id,
         metadata=request.metadata,
     )
+    graph = ContextGraphService()
+    entities = graph.ingest(request.user_id, request.content, request.entities)
     return MemorySaveResponse(
         id=memory.id,
         content=memory.content,
         summary=memory.summary,
         memory_type=memory.memory_type.value,
         created_at=memory.created_at,
+        graph_entities=[e.label for e in entities],
     )
 
 

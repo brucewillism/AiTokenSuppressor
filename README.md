@@ -58,6 +58,46 @@ flowchart TB
 | Observabilidade | Prometheus + Grafana |
 | Container | Docker + Docker Compose |
 
+## Arquitetura Enterprise v2
+
+```
+NGINX → LiteLLM Gateway → FastAPI API → Context Engine → Compression Pipeline
+                                              ↓
+                                    Semantic Memory (L1/L2/L3)
+                                              ↓
+                                    RAG + Context Graph → Adaptive Optimizer → LLM
+```
+
+### Novos Serviços (v2)
+
+| Serviço | Função |
+|---------|--------|
+| `ContextGraphService` | Memória em grafo com NetworkX |
+| `RelevanceService` | Scoring de importância semântica |
+| `ASTService` | Compressão code-aware via AST |
+| `ChunkingService` | Chunking semântico/AST |
+| `DiffService` | Diff semântico incremental |
+| `CodebaseService` | Indexação de projetos |
+| `FingerprintService` | MinHash + LSH para cache |
+| `HierarchicalMemoryService` | L1 Redis / L2 pgvector / L3 cold |
+| `SemanticLossService` | Detecção de perda semântica |
+| `SpecializedCompressionService` | Compressão por tipo de conteúdo |
+| `QualityGuardService` | Preservação de instruções críticas |
+| `BenchmarkService` | Benchmark de estratégias |
+| `CostOptimizerService` | Otimização cost-aware |
+| `StreamingService` | Compressão streaming |
+| `LiteLLMService` | Gateway multi-provider |
+
+### Novos Endpoints
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/advanced/benchmark` | Benchmark de estratégias |
+| POST | `/advanced/heatmap` | Token heatmap |
+| POST | `/advanced/graph/query` | Context graph query |
+| POST | `/advanced/codebase/index` | Indexar codebase |
+| POST | `/advanced/stream/compress` | Compressão streaming |
+
 ## Quick Start
 
 ### Pré-requisitos

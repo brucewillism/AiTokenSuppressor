@@ -1,6 +1,48 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API_KEY = import.meta.env.VITE_API_KEY || 'ats-dev-api-key-change-in-production';
 
+export { API_BASE, API_KEY };
+
+export interface ApiDisplayInfo {
+  url: string;
+  host: string;
+  port: string;
+}
+
+/** URL/host/porta exibidos na UI — espelha VITE_API_URL ou proxy /api no mesmo origin. */
+export function getApiDisplayInfo(): ApiDisplayInfo {
+  const base = API_BASE.trim();
+
+  if (base.startsWith('http://') || base.startsWith('https://')) {
+    try {
+      const parsed = new URL(base);
+      const port =
+        parsed.port ||
+        (parsed.protocol === 'https:' ? '443' : '80');
+      return {
+        url: base.replace(/\/$/, ''),
+        host: parsed.hostname,
+        port,
+      };
+    } catch {
+      return { url: base, host: base, port: '—' };
+    }
+  }
+
+  const path = base.startsWith('/') ? base : `/${base}`;
+  if (typeof window !== 'undefined') {
+    const { origin, hostname, port, protocol } = window.location;
+    const resolvedPort = port || (protocol === 'https:' ? '443' : '80');
+    return {
+      url: `${origin}${path}`,
+      host: hostname,
+      port: resolvedPort,
+    };
+  }
+
+  return { url: path, host: 'localhost', port: '8000' };
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -12,6 +54,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
 
   if (!response.ok) {
+    if (response.status === 502 || response.status === 503) {
+      throw new Error('Bad Gateway');
+    }
     const error = await response.json().catch(() => ({ message: response.statusText }));
     throw new Error(error.message || `HTTP ${response.status}`);
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StatusBadge, LoadingSpinner } from '../components/StatCard';
+import ApiConnectionHint from '../components/ApiConnectionHint';
 import { api, HealthStatus } from '../services/api';
 
 export default function Health() {
@@ -48,9 +49,7 @@ export default function Health() {
       </div>
 
       {!health && (
-        <div className="text-center py-12 bg-dark-800 rounded-xl border border-red-500/20">
-          <p className="text-red-400">API indisponível</p>
-        </div>
+        <ApiConnectionHint error="API indisponível" />
       )}
     </div>
   );

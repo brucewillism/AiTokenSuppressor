@@ -1,72 +1,4 @@
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: ats-postgres
-    environment:
-      POSTGRES_USER: ats
-      POSTGRES_PASSWORD: ats_secret
-      POSTGRES_DB: ai_token_suppressor
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ats -d ai_token_suppressor"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - ats-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: ats-redis
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - ats-network
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ats-ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    networks:
-      - ats-network
-
-  ollama-init:
-    image: ollama/ollama:latest
-    container_name: ats-ollama-init
-    depends_on:
-      ollama:
-        condition: service_started
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10 &&
-      ollama pull llama3.2:3b &&
-      ollama pull nomic-embed-text
-      "
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    networks:
-      - ats-network
 
   api:
     build:
@@ -76,20 +8,15 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://ats:ats_secret@postgres:5432/ai_token_suppressor
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      OLLAMA_BASE_URL: http://ollama:11434
+      DATABASE_URL: postgresql+asyncpg://postgres:SUA_SENHA_POSTGRES@host.docker.internal:5439/ats_db
+      REDIS_URL: redis://host.docker.internal:6379/0
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      OLLAMA_BASE_URL: http://host.docker.internal:11999
     ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ollama:
-        condition: service_started
+      - "8105:8000"  # <--- Nova porta da API (Antiga: 8095)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -108,15 +35,15 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://ats:ats_secret@postgres:5432/ai_token_suppressor
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      OLLAMA_BASE_URL: http://ollama:11434
+      DATABASE_URL: postgresql+asyncpg://postgres:SUA_SENHA_POSTGRES@host.docker.internal:5439/ats_db
+      REDIS_URL: redis://host.docker.internal:6379/0
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      OLLAMA_BASE_URL: http://host.docker.internal:11999
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - api
-      - redis
-      - postgres
     networks:
       - ats-network
 
@@ -125,17 +52,38 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ats-flower
-    command: celery -A app.workers.celery_app flower --port=5555
+    command: celery -A app.workers.celery_app flower --port=5556
     env_file:
       - .env
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
+      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
     ports:
-      - "5555:5555"
+      - "8104:5556"  # <--- Nova porta do Flower (Antiga: 5556)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - celery-worker
-      - redis
+    networks:
+      - ats-network
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: ats-litellm
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml
+    command: ["--config", "/app/config.yaml", "--port", "4001"]
+    ports:
+      - "8101:4001"  # <--- Nova porta do LiteLLM (Antiga: 4001)
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      OLLAMA_API_BASE: http://host.docker.internal:11999
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - ats-network
 
@@ -145,7 +93,7 @@ services:
       dockerfile: Dockerfile
     container_name: ats-frontend
     ports:
-      - "5173:80"
+      - "8100:80"  # <--- Nova porta do Frontend (Antiga: 5175)
     depends_on:
       - api
     networks:
@@ -158,7 +106,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - "8102:9090"  # <--- Nova porta do Prometheus (Antiga: 9091)
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -177,16 +125,13 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "3000:3000"
+      - "8103:3000"  # <--- Nova porta do Grafana (Antiga: 3001)
     depends_on:
       - prometheus
     networks:
       - ats-network
 
 volumes:
-  postgres_data:
-  redis_data:
-  ollama_data:
   prometheus_data:
   grafana_data:
 

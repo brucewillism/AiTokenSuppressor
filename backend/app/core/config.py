@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     cost_gemini_output: float = 5.0
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    litellm_url: str = "http://localhost:4000"
+    litellm_master_key: str = "sk-litellm-master-key"
+
     prometheus_enabled: bool = True
 
     @field_validator("cors_origins", mode="before")
