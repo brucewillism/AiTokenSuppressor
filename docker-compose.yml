@@ -91,6 +91,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_API_KEY: ${VITE_API_KEY:-ats-dev-api-key-change-in-production}
     container_name: ats-frontend
     ports:
       - "8100:80"  # <--- Nova porta do Frontend (Antiga: 5175)
