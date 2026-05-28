@@ -8,6 +8,17 @@ python -c "from app.core.config import get_settings; get_settings()" || {
   exit 1
 }
 
+python - <<'PY'
+import os
+from urllib.parse import urlparse
+
+url = os.environ.get("DATABASE_URL", "")
+user = urlparse(url).username or "(vazio)"
+print(f"DATABASE_URL usuario: {user}")
+if user == "postgres" and os.environ.get("POSTGRES_USER", "") not in ("", "postgres"):
+    print("AVISO: DATABASE_URL usa 'postgres' mas POSTGRES_USER difere — confira o .env")
+PY
+
 echo "Iniciando uvicorn..."
 python -c "from app.main import app; print('Import app.main: OK')" || {
   echo ""

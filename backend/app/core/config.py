@@ -1,5 +1,6 @@
 """Application configuration via environment variables."""
 
+import os
 from functools import lru_cache
 from typing import Literal
 
@@ -14,7 +15,8 @@ CompressionStrategy = Literal[
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Em Docker, variáveis vêm do env_file do compose — não ler /app/.env da imagem.
+        env_file=".env" if os.getenv("APP_ENV", "development") != "production" else None,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
