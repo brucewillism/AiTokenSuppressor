@@ -42,6 +42,16 @@ def _dict_to_message(data: dict) -> Message:
     return Message(role=role, content=content, name=data.get("name"))
 
 
+def _cache_payload_valid(cached: dict[str, Any] | None) -> bool:
+    """Ignora entradas Redis antigas/corrompidas (ex. messages=[])."""
+    if not cached:
+        return False
+    msgs = cached.get("messages")
+    if not isinstance(msgs, list) or not msgs:
+        return False
+    return any(str(m.get("content", "")).strip() for m in msgs if isinstance(m, dict))
+
+
 class OptimizeService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
@@ -101,7 +111,7 @@ class OptimizeService:
             )
             if similar and similar[0][1] >= 0.92:
                 cached = await self.cache.get_compression(similar[0][0])
-                if cached:
+                if cached and _cache_payload_valid(cached):
                     semantic_cache_hit = True
                     cache_hit = True
                     latency = (time.perf_counter() - start) * 1000
@@ -118,7 +128,7 @@ class OptimizeService:
                     )
 
         cached = await self.cache.get_compression(prompt_hash)
-        if cached:
+        if cached and _cache_payload_valid(cached):
             cache_hit = True
             latency = (time.perf_counter() - start) * 1000
             await self.analytics.log_request(
@@ -264,7 +274,8 @@ class OptimizeService:
             "cost_saved_usd": round(cost_saved, 6),
             "semantic_loss_score": semantic_loss_score,
         }
-        await self.cache.set_compression(prompt_hash, cache_payload)
+        if _cache_payload_valid(cache_payload):
+            await self.cache.set_compression(prompt_hash, cache_payload)
         if use_semantic_cache:
             try:
                 from app.services.ollama_service import OllamaService
@@ -345,7 +356,7 @@ class OptimizeService:
             msg_dicts, effective_strategy, use_ollama, preserve_system,
         )
         cached = await self.cache.get_compression(cache_key)
-        if cached:
+        if cached and _cache_payload_valid(cached):
             latency = (time.perf_counter() - start) * 1000
             try:
                 await self.analytics.log_request(
@@ -426,7 +437,8 @@ class OptimizeService:
             "token_heatmap": heatmap_data["segments"],
             "quality_preserved": quality_preserved,
         }
-        await self.cache.set_compression(cache_key, cache_payload)
+        if _cache_payload_valid(cache_payload):
+            await self.cache.set_compression(cache_key, cache_payload)
 
         COMPRESSION_RATIO.labels(strategy=effective_strategy.value).observe(
             savings["compression_ratio"]
