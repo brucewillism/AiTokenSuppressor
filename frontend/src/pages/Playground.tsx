@@ -9,6 +9,7 @@ export default function Playground() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fastMode, setFastMode] = useState(true);
 
   const handleCompress = async () => {
     setLoading(true);
@@ -18,7 +19,10 @@ export default function Playground() {
         { role: 'system', content: 'You are a helpful assistant.' },
         { role: 'user', content: input },
       ];
-      const data = await api.compress(messages, strategy);
+      const data = await api.compress(messages, strategy, {
+        checkSemanticLoss: fastMode ? false : undefined,
+        useOllama: fastMode ? false : undefined,
+      });
       setResult(data as Record<string, unknown>);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao comprimir');
@@ -35,7 +39,11 @@ export default function Playground() {
         { role: 'system', content: 'You are a helpful assistant.' },
         { role: 'user', content: input },
       ];
-      const data = await api.optimize(messages, strategy);
+      const data = await api.optimize(messages, strategy, {
+        useMemory: fastMode ? false : true,
+        useRag: false,
+        checkSemanticLoss: fastMode ? false : undefined,
+      });
       setResult(data as Record<string, unknown>);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao otimizar');
@@ -49,6 +57,13 @@ export default function Playground() {
       <div>
         <h2 className="text-2xl font-bold text-white">Playground</h2>
         <p className="text-gray-400 mt-1">Teste compressão e otimização de prompts em tempo real</p>
+        <p className="text-gray-500 text-xs mt-2 max-w-2xl">
+          Estratégias <span className="text-gray-400">ultra</span>,{' '}
+          <span className="text-gray-400">balanced</span> e{' '}
+          <span className="text-gray-400">aggressive</span> usam Ollama (pode levar 1–3 min na VPS).
+          Para teste rápido use <span className="text-primary-400">code-focused</span> ou mantenha{' '}
+          <span className="text-primary-400">Modo rápido</span> ativo.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -65,6 +80,16 @@ export default function Playground() {
               ))}
             </select>
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={fastMode}
+              onChange={(e) => setFastMode(e.target.checked)}
+              className="rounded border-gray-600 bg-dark-800 text-primary-500 focus:ring-primary-500"
+            />
+            Modo rápido (sem Ollama para métrica semântica / memória)
+          </label>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Prompt</label>

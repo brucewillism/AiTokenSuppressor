@@ -56,6 +56,7 @@ async def compress_prompt(
         preserve_system=request.preserve_system,
         target_model=request.target_model,
         check_semantic_loss=request.check_semantic_loss,
+        use_ollama=request.use_ollama,
     )
     return CompressResponse(**result)
 

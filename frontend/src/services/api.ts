@@ -55,15 +55,33 @@ function getDirectHealthUrl(): string | null {
   return null;
 }
 
+const REQUEST_TIMEOUT_MS = 180_000;
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY,
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY,
+        ...options.headers,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(
+        'Tempo esgotado (3 min). Use estratégia code-focused ou desative Ollama; ultra/balanced chamam o LLM local.'
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     if (response.status === 502 || response.status === 503) {
@@ -107,14 +125,35 @@ export interface HealthStatus {
 export const api = {
   getStats: (days = 7) => request<Stats>(`/stats?days=${days}`),
   getHealth: () => request<HealthStatus>('/health/full'),
-  compress: (messages: Array<{ role: string; content: string }>, strategy = 'balanced') =>
+  compress: (
+    messages: Array<{ role: string; content: string }>,
+    strategy = 'balanced',
+    options?: { checkSemanticLoss?: boolean; useOllama?: boolean },
+  ) =>
     request('/compress', {
       method: 'POST',
-      body: JSON.stringify({ messages, strategy }),
+      body: JSON.stringify({
+        messages,
+        strategy,
+        ...(options?.checkSemanticLoss !== undefined
+          ? { check_semantic_loss: options.checkSemanticLoss }
+          : {}),
+        ...(options?.useOllama !== undefined ? { use_ollama: options.useOllama } : {}),
+      }),
     }),
-  optimize: (messages: Array<{ role: string; content: string }>, strategy = 'balanced') =>
+  optimize: (
+    messages: Array<{ role: string; content: string }>,
+    strategy = 'balanced',
+    options?: { useMemory?: boolean; useRag?: boolean; checkSemanticLoss?: boolean },
+  ) =>
     request('/optimize', {
       method: 'POST',
-      body: JSON.stringify({ messages, strategy, use_memory: true }),
+      body: JSON.stringify({
+        messages,
+        strategy,
+        use_memory: options?.useMemory ?? false,
+        use_rag: options?.useRag ?? false,
+        check_semantic_loss: options?.checkSemanticLoss ?? false,
+      }),
     }),
 };

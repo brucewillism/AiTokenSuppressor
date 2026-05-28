@@ -298,6 +298,7 @@ class OptimizeService:
         preserve_system: bool = True,
         target_model: str = "claude-3-5-sonnet",
         check_semantic_loss: bool = True,
+        use_ollama: bool | None = None,
     ) -> dict[str, Any]:
         start = time.perf_counter()
         msg_dicts = [m.model_dump() for m in messages]
@@ -306,7 +307,11 @@ class OptimizeService:
         content_types = {str(s["index"]): s["content_type"] for s in heatmap_data["segments"]}
 
         compressed, operations = await self.compression.compress_prompt(
-            msg_dicts, strategy=strategy, max_tokens=max_tokens, preserve_system=preserve_system,
+            msg_dicts,
+            strategy=strategy,
+            max_tokens=max_tokens,
+            preserve_system=preserve_system,
+            use_ollama=use_ollama,
         )
 
         semantic_loss_score: float | None = None

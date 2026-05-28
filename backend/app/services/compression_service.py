@@ -163,8 +163,10 @@ class CompressionService:
         strategy: CompressionStrategy = CompressionStrategy.BALANCED,
         max_tokens: int | None = None,
         preserve_system: bool = True,
+        use_ollama: bool | None = None,
     ) -> tuple[list[dict], list[str]]:
         config = self._get_config(strategy)
+        ollama_enabled = config["use_ollama"] if use_ollama is None else use_ollama
         operations: list[str] = []
 
         msg_dicts = [
@@ -178,7 +180,7 @@ class CompressionService:
         if protected:
             operations.append(f"protected_{len(protected)}_critical_messages")
 
-        if config["use_ollama"]:
+        if ollama_enabled:
             keep_recent = 8 if strategy == CompressionStrategy.CHAT_FOCUSED else 5
             compressible, sum_ops = await self.summarize_history(compressible, keep_recent=keep_recent)
             operations.extend(sum_ops)
@@ -215,7 +217,7 @@ class CompressionService:
             token_count = self.token_service.count_tokens(result_content)
             threshold = config["summarize_threshold"]
 
-            if token_count > threshold and config["use_ollama"]:
+            if token_count > threshold and ollama_enabled:
                 if strategy in (CompressionStrategy.SEMANTIC, CompressionStrategy.ULTRA):
                     result_content, sem_ops = await self.semantic_reduce(
                         result_content, config["target_ratio"]

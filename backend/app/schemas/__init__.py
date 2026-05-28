@@ -54,6 +54,7 @@ class CompressRequest(BaseModel):
     user_id: str = "default"
     target_model: str = "claude-3-5-sonnet"
     check_semantic_loss: bool = True
+    use_ollama: bool | None = None
 
     @field_validator("messages")
     @classmethod
