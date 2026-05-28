@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.core.metrics import COMPRESSION_RATIO, TOKENS_SAVED
-from app.schemas import CompressionStrategy, Message
+from app.schemas import CompressionStrategy, Message, MessageRole
 from app.services.analytics_service import AnalyticsService
 from app.services.cache_service import CacheService
 from app.services.compression_service import CompressionService
