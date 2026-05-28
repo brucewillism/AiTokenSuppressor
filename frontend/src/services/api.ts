@@ -148,7 +148,7 @@ export const api = {
   getHealth: () => request<HealthStatus>('/health/full'),
   compress: (
     messages: Array<{ role: string; content: string }>,
-    strategy = 'balanced',
+    strategy = 'fast',
     options?: {
       checkSemanticLoss?: boolean;
       useOllama?: boolean;
@@ -169,7 +169,7 @@ export const api = {
     }),
   optimize: (
     messages: Array<{ role: string; content: string }>,
-    strategy = 'balanced',
+    strategy = 'fast',
     options?: {
       useMemory?: boolean;
       useRag?: boolean;

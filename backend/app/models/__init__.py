@@ -22,6 +22,7 @@ from app.core.database import Base
 
 
 class CompressionStrategyEnum(str, PyEnum):
+    FAST = "fast"
     AGGRESSIVE = "aggressive"
     BALANCED = "balanced"
     ULTRA = "ultra"

@@ -110,12 +110,15 @@ class ProxyService:
                 use_semantic_cache=True,
                 check_semantic_loss=False,
             )
+        effective_ollama = use_ollama
+        if strategy == CompressionStrategy.FAST:
+            effective_ollama = False
         return await self.optimize_service.compress_only(
             messages=messages,
             strategy=strategy,
             target_model=model,
             check_semantic_loss=False,
-            use_ollama=use_ollama,
+            use_ollama=effective_ollama,
         )
 
     async def chat_completion(

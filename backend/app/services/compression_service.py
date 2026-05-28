@@ -26,7 +26,10 @@ from app.utils.helpers import (
 logger = get_logger(__name__)
 settings = get_settings()
 
+HEAVY_STRATEGIES = frozenset({CompressionStrategy.ULTRA, CompressionStrategy.SEMANTIC})
+
 STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
+    "fast": {"target_ratio": 0.9, "summarize_threshold": 100_000, "use_ollama": False},
     "aggressive": {"target_ratio": 0.3, "summarize_threshold": 500, "use_ollama": True},
     "balanced": {"target_ratio": 0.5, "summarize_threshold": 1000, "use_ollama": True},
     "ultra": {"target_ratio": 0.15, "summarize_threshold": 300, "use_ollama": True},
@@ -34,6 +37,24 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
     "code-focused": {"target_ratio": 0.6, "summarize_threshold": 2000, "use_ollama": False},
     "chat-focused": {"target_ratio": 0.45, "summarize_threshold": 600, "use_ollama": True},
 }
+
+
+def resolve_compression_strategy(
+    strategy: CompressionStrategy,
+    tokens_before: int,
+    use_ollama: bool | None,
+    *,
+    threshold: int | None = None,
+) -> tuple[CompressionStrategy, list[str]]:
+    """Use `fast` automatically for small prompts unless Ollama or heavy strategy."""
+    limit = threshold if threshold is not None else settings.compress_lightweight_token_threshold
+    if use_ollama is True or strategy in HEAVY_STRATEGIES:
+        return strategy, []
+    if tokens_before >= limit:
+        return strategy, []
+    if strategy in (CompressionStrategy.FAST, CompressionStrategy.CODE_FOCUSED):
+        return strategy, []
+    return CompressionStrategy.FAST, [f"auto_strategy:fast(tokens<{limit})"]
 
 
 class CompressionService:
@@ -199,7 +220,12 @@ class CompressionService:
             result_content = content
             msg_ops: list[str] = []
 
-            if strategy == CompressionStrategy.CODE_FOCUSED:
+            if strategy == CompressionStrategy.FAST:
+                result_content, min_ops = self.minify_prompt(content)
+                msg_ops.extend(min_ops)
+                result_content, json_ops = self.compact_json_in_text(result_content)
+                msg_ops.extend(json_ops)
+            elif strategy == CompressionStrategy.CODE_FOCUSED:
                 result_content, code_ops = self.dedup_service.deduplicate_code_blocks(content)
                 msg_ops.extend(code_ops)
                 spec_content, spec_ops, _ct = self.specialized.compress_message(result_content)

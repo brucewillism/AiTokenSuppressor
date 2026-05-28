@@ -52,6 +52,24 @@ async def test_compress_with_api_key(client):
 
 
 @pytest.mark.asyncio
+async def test_compress_fast_strategy(client):
+    response = await client.post(
+        "/compress",
+        headers=HEADERS,
+        json={
+            "messages": [{"role": "user", "content": "Responda em uma frase: 2+2?"}],
+            "strategy": "fast",
+            "use_ollama": False,
+            "check_semantic_loss": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["strategy"] == "fast"
+    assert "latency_ms" in data
+
+
+@pytest.mark.asyncio
 async def test_v1_models(client):
     response = await client.get("/v1/models", headers=HEADERS)
     assert response.status_code == 200

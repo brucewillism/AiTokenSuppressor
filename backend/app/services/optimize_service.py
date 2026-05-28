@@ -5,12 +5,13 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.metrics import COMPRESSION_RATIO, TOKENS_SAVED
 from app.schemas import CompressionStrategy, Message, MessageRole
 from app.services.analytics_service import AnalyticsService
 from app.services.cache_service import CacheService
-from app.services.compression_service import CompressionService
+from app.services.compression_service import CompressionService, resolve_compression_strategy
 from app.services.content_detection_service import ContentDetectionService
 from app.services.context_graph_service import ContextGraphService
 from app.services.context_manager import ContextManager
@@ -25,6 +26,7 @@ from app.services.token_heatmap_service import TokenHeatmapService
 from app.services.token_service import TokenService
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 def _dict_to_message(data: dict) -> Message:
@@ -189,9 +191,14 @@ class OptimizeService:
                 effective_strategy = CompressionStrategy.AGGRESSIVE
                 operations.append("adaptive_strategy:aggressive")
 
+        compress_strategy, auto_ops = resolve_compression_strategy(
+            effective_strategy, tokens_before, use_ollama,
+        )
+        operations.extend(auto_ops)
+
         compressed, comp_ops = await self.compression.compress_prompt(
             msg_dicts,
-            strategy=effective_strategy,
+            strategy=compress_strategy,
             max_tokens=max_tokens,
             use_ollama=use_ollama,
         )
@@ -307,10 +314,20 @@ class OptimizeService:
 
         return result
 
+    def _compress_cache_key(
+        self,
+        msg_dicts: list[dict],
+        strategy: CompressionStrategy,
+        use_ollama: bool | None,
+        preserve_system: bool,
+    ) -> str:
+        base = self.cache.hash_prompt(msg_dicts)
+        return f"{strategy.value}|{use_ollama}|{preserve_system}|{base}"
+
     async def compress_only(
         self,
         messages: list[Message],
-        strategy: CompressionStrategy = CompressionStrategy.BALANCED,
+        strategy: CompressionStrategy = CompressionStrategy.FAST,
         max_tokens: int | None = None,
         preserve_system: bool = True,
         target_model: str = "claude-3-5-sonnet",
@@ -320,20 +337,74 @@ class OptimizeService:
         start = time.perf_counter()
         msg_dicts = [m.model_dump() for m in messages]
         tokens_before = self.token_service.count_messages(msg_dicts)
-        heatmap_data = self.heatmap.generate(msg_dicts, target_model)
-        content_types = {str(s["index"]): s["content_type"] for s in heatmap_data["segments"]}
 
-        compressed, operations = await self.compression.compress_prompt(
+        effective_strategy, auto_ops = resolve_compression_strategy(
+            strategy, tokens_before, use_ollama,
+        )
+        cache_key = self._compress_cache_key(
+            msg_dicts, effective_strategy, use_ollama, preserve_system,
+        )
+        cached = await self.cache.get_compression(cache_key)
+        if cached:
+            latency = (time.perf_counter() - start) * 1000
+            try:
+                await self.analytics.log_request(
+                    "compress",
+                    tokens_before,
+                    cached["tokens_after"],
+                    strategy=effective_strategy.value,
+                    model_target=target_model,
+                    latency_ms=latency,
+                    cache_hit=True,
+                )
+            except Exception as exc:
+                logger.warning("compress_analytics_skipped", error=str(exc))
+            return {
+                "messages": [_dict_to_message(m) for m in cached["messages"]],
+                "tokens_before": tokens_before,
+                "tokens_after": cached["tokens_after"],
+                "tokens_saved": cached["tokens_saved"],
+                "savings_percent": cached["savings_percent"],
+                "compression_ratio": cached["compression_ratio"],
+                "strategy": effective_strategy,
+                "operations_applied": [*auto_ops, "cache_hit"],
+                "latency_ms": round(latency, 2),
+                "semantic_loss_score": cached.get("semantic_loss_score"),
+                "content_types": cached.get("content_types", {}),
+                "token_heatmap": cached.get("token_heatmap", []),
+                "quality_preserved": cached.get("quality_preserved", True),
+            }
+
+        lightweight = tokens_before < settings.compress_lightweight_token_threshold
+        if lightweight:
+            heatmap_data: dict = {"segments": []}
+            content_types: dict[str, str] = {}
+        else:
+            heatmap_data = self.heatmap.generate(msg_dicts, target_model)
+            content_types = {
+                str(s["index"]): s["content_type"] for s in heatmap_data["segments"]
+            }
+
+        operations = list(auto_ops)
+        compressed, comp_ops = await self.compression.compress_prompt(
             msg_dicts,
-            strategy=strategy,
+            strategy=effective_strategy,
             max_tokens=max_tokens,
             preserve_system=preserve_system,
             use_ollama=use_ollama,
         )
+        operations.extend(comp_ops)
 
         semantic_loss_score: float | None = None
         quality_preserved = True
-        if check_semantic_loss:
+        run_semantic = (
+            check_semantic_loss
+            and not lightweight
+            and tokens_before >= settings.compress_skip_semantic_loss_below_tokens
+            and use_ollama is not False
+            and effective_strategy != CompressionStrategy.FAST
+        )
+        if run_semantic:
             loss_report = await self.semantic_loss.measure(msg_dicts, compressed)
             semantic_loss_score = loss_report.loss_score
             quality_preserved = loss_report.quality_preserved
@@ -344,12 +415,32 @@ class OptimizeService:
 
         result_messages = [_dict_to_message(m) for m in compressed]
 
+        cache_payload = {
+            "messages": compressed,
+            "tokens_after": tokens_after,
+            "tokens_saved": savings["tokens_saved"],
+            "savings_percent": savings["savings_percent"],
+            "compression_ratio": savings["compression_ratio"],
+            "semantic_loss_score": semantic_loss_score,
+            "content_types": content_types,
+            "token_heatmap": heatmap_data["segments"],
+            "quality_preserved": quality_preserved,
+        }
+        await self.cache.set_compression(cache_key, cache_payload)
+
+        COMPRESSION_RATIO.labels(strategy=effective_strategy.value).observe(
+            savings["compression_ratio"]
+        )
+        TOKENS_SAVED.labels(model=target_model, strategy=effective_strategy.value).inc(
+            savings["tokens_saved"]
+        )
+
         try:
             await self.analytics.log_request(
                 "compress",
                 tokens_before,
                 tokens_after,
-                strategy=strategy.value,
+                strategy=effective_strategy.value,
                 model_target=target_model,
                 latency_ms=latency,
                 metadata={"semantic_loss": semantic_loss_score},
@@ -364,7 +455,7 @@ class OptimizeService:
             "tokens_saved": savings["tokens_saved"],
             "savings_percent": savings["savings_percent"],
             "compression_ratio": savings["compression_ratio"],
-            "strategy": strategy,
+            "strategy": effective_strategy,
             "operations_applied": operations,
             "latency_ms": round(latency, 2),
             "semantic_loss_score": semantic_loss_score,

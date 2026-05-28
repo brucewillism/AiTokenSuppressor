@@ -4,6 +4,8 @@ import pytest
 
 from app.services.ast_service import ASTService
 from app.services.content_detection_service import ContentDetectionService
+from app.schemas import CompressionStrategy
+from app.services.compression_service import resolve_compression_strategy
 from app.services.fingerprint_service import FingerprintService
 from app.services.quality_guard_service import QualityGuardService
 from app.services.relevance_service import RelevanceService
@@ -72,6 +74,22 @@ class TestQualityGuard:
         merged, report = svc.merge_with_compressed(original, compressed)
         system_contents = [m["content"] for m in merged if m["role"] == "system"]
         assert len(system_contents) > 0
+
+
+class TestResolveCompressionStrategy:
+    def test_small_prompt_uses_fast(self):
+        strategy, ops = resolve_compression_strategy(
+            CompressionStrategy.BALANCED, tokens_before=50, use_ollama=False,
+        )
+        assert strategy == CompressionStrategy.FAST
+        assert ops
+
+    def test_large_prompt_keeps_strategy(self):
+        strategy, ops = resolve_compression_strategy(
+            CompressionStrategy.BALANCED, tokens_before=5000, use_ollama=False,
+        )
+        assert strategy == CompressionStrategy.BALANCED
+        assert not ops
 
 
 class TestFingerprint:

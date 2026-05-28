@@ -182,15 +182,20 @@ class AnalyticsService:
 
         for strategy in CompressionStrategy:
             ratio_map = {
-                "aggressive": 0.35, "balanced": 0.50, "ultra": 0.20,
-                "semantic": 0.45, "code-focused": 0.60, "chat-focused": 0.48,
+                "fast": 0.88,
+                "aggressive": 0.35,
+                "balanced": 0.50,
+                "ultra": 0.20,
+                "semantic": 0.45,
+                "code-focused": 0.60,
+                "chat-focused": 0.48,
             }
             estimated_after = int(tokens_before * ratio_map.get(strategy.value, 0.5))
             estimated[strategy.value] = estimated_after
             saved = tokens_before - estimated_after
             savings[strategy.value] = round(saved / tokens_before * 100, 2) if tokens_before else 0
 
-        recommended = CompressionStrategy.BALANCED
+        recommended = CompressionStrategy.FAST
         if task_type == "coding":
             recommended = CompressionStrategy.CODE_FOCUSED
         elif task_type == "chat":

@@ -9,7 +9,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 CompressionStrategy = Literal[
-    "aggressive", "balanced", "ultra", "semantic", "code-focused", "chat-focused"
+    "fast",
+    "aggressive",
+    "balanced",
+    "ultra",
+    "semantic",
+    "code-focused",
+    "chat-focused",
 ]
 
 
@@ -70,7 +76,10 @@ class Settings(BaseSettings):
     max_payload_size_mb: int = 10
     max_messages: int = 500
 
-    default_compression_strategy: CompressionStrategy = "balanced"
+    default_compression_strategy: CompressionStrategy = "fast"
+    # Prompts menores que isso usam pipeline leve (sem heatmap / semântica pesada).
+    compress_lightweight_token_threshold: int = 400
+    compress_skip_semantic_loss_below_tokens: int = 800
     target_compression_ratio: float = 0.4
 
     rag_chunk_size: int = 512
@@ -93,7 +102,7 @@ class Settings(BaseSettings):
 
     prometheus_enabled: bool = True
 
-    proxy_default_strategy: str = "balanced"
+    proxy_default_strategy: str = "fast"
     proxy_pipeline: str = "compress"
     proxy_use_memory: bool = False
     proxy_use_ollama: bool = False

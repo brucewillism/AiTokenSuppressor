@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 
-const STRATEGIES = ['aggressive', 'balanced', 'ultra', 'semantic', 'code-focused', 'chat-focused'];
+const STRATEGIES = ['fast', 'code-focused', 'balanced', 'aggressive', 'chat-focused', 'semantic', 'ultra'];
 const SLOW_STRATEGIES = new Set(['ultra', 'balanced', 'aggressive', 'semantic', 'chat-focused']);
 
 function formatElapsed(ms: number): string {
@@ -12,7 +12,7 @@ function formatElapsed(ms: number): string {
 
 export default function Playground() {
   const [input, setInput] = useState('You are a helpful assistant.\n\nUser: Explain how to build a REST API with FastAPI including authentication, database models, and error handling. Provide detailed examples with code.');
-  const [strategy, setStrategy] = useState('code-focused');
+  const [strategy, setStrategy] = useState('fast');
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +79,11 @@ export default function Playground() {
         <h2 className="text-2xl font-bold text-white">Playground</h2>
         <p className="text-gray-400 mt-1">Teste compressão e otimização de prompts em tempo real</p>
         <p className="text-gray-500 text-xs mt-2 max-w-2xl">
-          Estratégias <span className="text-gray-400">ultra</span>,{' '}
-          <span className="text-gray-400">balanced</span> e{' '}
-          <span className="text-gray-400">aggressive</span> com Ollama podem levar 2–5 min na VPS.
-          Para teste rápido use <span className="text-primary-400">code-focused</span> e mantenha{' '}
-          <span className="text-primary-400">Modo rápido</span> ativo.
+          Use <span className="text-primary-400">fast</span> ou{' '}
+          <span className="text-primary-400">code-focused</span> para respostas em segundos.
+          <span className="text-gray-400"> ultra</span> /{' '}
+          <span className="text-gray-400">balanced</span> com Ollama podem levar vários minutos na VPS.
+          Mantenha <span className="text-primary-400">Modo rápido</span> ativo no dia a dia.
         </p>
       </div>
 

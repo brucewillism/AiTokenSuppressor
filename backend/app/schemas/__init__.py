@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class CompressionStrategy(str, Enum):
+    FAST = "fast"
     AGGRESSIVE = "aggressive"
     BALANCED = "balanced"
     ULTRA = "ultra"
