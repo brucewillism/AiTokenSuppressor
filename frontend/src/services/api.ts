@@ -152,7 +152,7 @@ export interface Stats {
 
 export interface HealthStatus {
   status: string;
-  services: Record<string, { status: string; latency_ms?: number }>;
+  services: Record<string, { status: string; latency_ms?: number | null; details?: Record<string, unknown> } | string>;
 }
 
 export const api = {

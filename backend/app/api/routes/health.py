@@ -1,5 +1,6 @@
 """Health check endpoints."""
 
+import asyncio
 import time
 
 from fastapi import APIRouter
@@ -11,6 +12,12 @@ from app.schemas import HealthResponse
 from app.services.ollama_service import OllamaService
 
 router = APIRouter(prefix="/health", tags=["Health"])
+
+HEALTH_PROBE_TIMEOUT = 8.0
+
+
+def _service_dict(health: HealthResponse) -> dict:
+    return health.model_dump()
 
 
 @router.get("")
@@ -56,7 +63,7 @@ async def health_postgres() -> HealthResponse:
 async def health_ollama() -> HealthResponse:
     start = time.perf_counter()
     ollama = OllamaService()
-    result = await ollama.health_check()
+    result = await ollama.health_check(timeout=5.0)
     latency = (time.perf_counter() - start) * 1000
     status = result.get("status", "unhealthy")
     return HealthResponse(
@@ -67,23 +74,39 @@ async def health_ollama() -> HealthResponse:
     )
 
 
+async def _probe(name: str, coro) -> HealthResponse:
+    try:
+        return await asyncio.wait_for(coro, timeout=HEALTH_PROBE_TIMEOUT)
+    except asyncio.TimeoutError:
+        return HealthResponse(
+            status="unhealthy",
+            service=name,
+            details={"error": f"timeout after {HEALTH_PROBE_TIMEOUT}s"},
+        )
+    except Exception as exc:
+        return HealthResponse(
+            status="unhealthy",
+            service=name,
+            details={"error": str(exc)},
+        )
+
+
 @router.get("/full", response_model=dict)
 async def health_full() -> dict:
-    redis_health = await health_redis()
-    postgres_health = await health_postgres()
-    ollama_health = await health_ollama()
-
-    all_healthy = all(
-        h.status == "healthy"
-        for h in (redis_health, postgres_health, ollama_health)
+    redis_health, postgres_health, ollama_health = await asyncio.gather(
+        _probe("redis", health_redis()),
+        _probe("postgres", health_postgres()),
+        _probe("ollama", health_ollama()),
     )
 
+    core_ok = redis_health.status == "healthy" and postgres_health.status == "healthy"
+
     return {
-        "status": "healthy" if all_healthy else "degraded",
+        "status": "healthy" if core_ok else "degraded",
         "services": {
-            "api": "healthy",
-            "redis": redis_health.model_dump(),
-            "postgres": postgres_health.model_dump(),
-            "ollama": ollama_health.model_dump(),
+            "api": {"status": "healthy", "service": "api", "latency_ms": None},
+            "redis": _service_dict(redis_health),
+            "postgres": _service_dict(postgres_health),
+            "ollama": _service_dict(ollama_health),
         },
     }

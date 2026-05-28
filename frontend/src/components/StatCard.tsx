@@ -39,16 +39,23 @@ export function LoadingSpinner() {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const isHealthy = status === 'healthy';
+  const isHealthy = status === 'healthy' || status === 'ok';
+  const isDegraded = status === 'degraded';
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
         isHealthy
           ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-          : 'bg-red-500/10 text-red-400 border border-red-500/20'
+          : isDegraded
+            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+            : 'bg-red-500/10 text-red-400 border border-red-500/20'
       }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isHealthy ? 'bg-green-400' : 'bg-red-400'}`} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+          isHealthy ? 'bg-green-400' : isDegraded ? 'bg-amber-400' : 'bg-red-400'
+        }`}
+      />
       {status}
     </span>
   );

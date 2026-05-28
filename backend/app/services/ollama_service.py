@@ -76,12 +76,12 @@ class OllamaService:
             logger.error("ollama_request_failed", operation=operation, error=str(exc))
             raise OllamaError(f"Ollama request failed: {exc}") from exc
 
-    async def health_check(self) -> dict[str, Any]:
+    async def health_check(self, timeout: float = 5.0) -> dict[str, Any]:
         try:
-            client = await get_ollama_client()
             start = __import__("time").perf_counter()
-            response = await client.get(f"{self.base_url}/api/tags")
-            response.raise_for_status()
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.get(f"{self.base_url}/api/tags")
+                response.raise_for_status()
             latency = (__import__("time").perf_counter() - start) * 1000
             data = response.json()
             return {
