@@ -52,6 +52,59 @@ async def test_compress_with_api_key(client):
 
 
 @pytest.mark.asyncio
+async def test_v1_models(client):
+    response = await client.get("/v1/models", headers=HEADERS)
+    assert response.status_code == 200
+    assert response.json()["object"] == "list"
+    assert len(response.json()["data"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_v1_chat_completions_requires_auth(client):
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_v1_chat_completions_proxy(client, monkeypatch):
+    async def fake_complete(self, messages, model=None, provider="anthropic", max_tokens=4096, temperature=0.3):
+        return {
+            "content": "Resposta mock",
+            "model": model or "gpt-4o-mini",
+            "tokens_input": 10,
+            "tokens_output": 5,
+            "cost_usd": 0,
+        }
+
+    from app.services.litellm_service import LiteLLMService
+
+    monkeypatch.setattr(LiteLLMService, "complete", fake_complete)
+
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={**HEADERS, "X-ATS-Use-Ollama": "false"},
+        json={
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": "Please note that " * 50 + "we need an API."},
+            ],
+            "stream": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["object"] == "chat.completion"
+    assert data["choices"][0]["message"]["content"] == "Resposta mock"
+    assert "X-ATS-Tokens-Before" in response.headers
+
+
+@pytest.mark.asyncio
 async def test_analyze(client):
     response = await client.post(
         "/analyze",

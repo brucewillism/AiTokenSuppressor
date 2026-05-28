@@ -1,5 +1,6 @@
 """LiteLLM universal gateway integration."""
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 from app.core.config import get_settings
@@ -33,6 +34,28 @@ class LiteLLMService:
                 litellm.api_key = settings.anthropic_api_key
             litellm.drop_params = True
 
+    def _resolve_api_key(self, provider: str) -> str | None:
+        keys = {
+            "openai": settings.openai_api_key,
+            "anthropic": settings.anthropic_api_key,
+            "gemini": settings.gemini_api_key,
+            "deepseek": getattr(settings, "deepseek_api_key", ""),
+        }
+        key = keys.get(provider, "")
+        return key or None
+
+    def _format_messages(self, messages: list[dict]) -> list[dict[str, str]]:
+        formatted: list[dict[str, str]] = []
+        for m in messages:
+            role = str(m.get("role", "user"))
+            if role == "tool":
+                role = "user"
+            content = m.get("content", "")
+            if not isinstance(content, str):
+                content = str(content)
+            formatted.append({"role": role, "content": content})
+        return formatted
+
     async def complete(
         self,
         messages: list[dict],
@@ -45,13 +68,17 @@ class LiteLLMService:
             return {"error": "litellm_not_installed", "content": ""}
 
         resolved_model = model or PROVIDER_MAP.get(provider, "gpt-4o-mini")
+        api_key = self._resolve_api_key(provider)
         try:
-            response = await litellm.acompletion(
-                model=resolved_model,
-                messages=[{"role": m["role"], "content": m["content"]} for m in messages],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
+            kwargs: dict[str, Any] = {
+                "model": resolved_model,
+                "messages": self._format_messages(messages),
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }
+            if api_key:
+                kwargs["api_key"] = api_key
+            response = await litellm.acompletion(**kwargs)
             content = response.choices[0].message.content
             usage = response.usage
             return {
@@ -83,6 +110,44 @@ class LiteLLMService:
         if task_type in task_models and provider in task_models[task_type]:
             return task_models[task_type][provider]
         return PROVIDER_MAP.get(provider, "gpt-4o-mini")
+
+    async def complete_stream(
+        self,
+        messages: list[dict],
+        model: str | None = None,
+        provider: str = "anthropic",
+        max_tokens: int = 4096,
+        temperature: float = 0.3,
+    ) -> AsyncIterator[dict[str, Any]]:
+        if not self.available:
+            yield {"delta": {"content": ""}, "finish_reason": "stop"}
+            return
+
+        resolved_model = model or PROVIDER_MAP.get(provider, "gpt-4o-mini")
+        api_key = self._resolve_api_key(provider)
+        kwargs: dict[str, Any] = {
+            "model": resolved_model,
+            "messages": self._format_messages(messages),
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": True,
+        }
+        if api_key:
+            kwargs["api_key"] = api_key
+
+        response = await litellm.acompletion(**kwargs)
+        sent_role = False
+        async for chunk in response:
+            choice = chunk.choices[0]
+            delta: dict[str, str] = {}
+            if choice.delta.role and not sent_role:
+                delta["role"] = choice.delta.role
+                sent_role = True
+            if choice.delta.content:
+                delta["content"] = choice.delta.content
+            finish = choice.finish_reason
+            if delta or finish:
+                yield {"delta": delta, "finish_reason": finish}
 
     async def health_check(self) -> dict[str, Any]:
         return {

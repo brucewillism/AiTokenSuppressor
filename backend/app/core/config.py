@@ -91,6 +91,12 @@ class Settings(BaseSettings):
 
     prometheus_enabled: bool = True
 
+    proxy_default_strategy: str = "balanced"
+    proxy_pipeline: str = "compress"
+    proxy_use_memory: bool = False
+    proxy_use_ollama: bool = False
+    proxy_skip_optimize: bool = False
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors(cls, v: str | list[str]) -> str:

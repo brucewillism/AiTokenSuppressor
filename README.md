@@ -239,9 +239,42 @@ OLLAMA_MODEL=llama3.2:3b
 OLLAMA_EMBED_MODEL=nomic-embed-text
 ```
 
-## Integração com Cursor / VSCode
+## Integração automática (Cursor / OpenAI SDK)
 
-Configure um proxy ou middleware que intercepte requests para APIs LLM:
+O endpoint **`POST /v1/chat/completions`** comprime o prompt e encaminha ao LLM (formato OpenAI).
+
+### Cursor
+
+1. **Settings → Models → OpenAI API Key:** sua `API_KEY` do `.env` (ex: `ats-super-api-key`)
+2. **Override OpenAI Base URL:** `http://SEU_IP:8100/v1` (ou `http://localhost:8105/v1` direto na API)
+3. Modelo: `gpt-4o-mini`, `gpt-4o`, `claude-3-5-sonnet-20241022`, etc.
+4. Configure no `.env` a chave do provedor real (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …)
+
+Headers opcionais:
+
+| Header | Valores | Descrição |
+|--------|---------|-----------|
+| `X-ATS-Strategy` | `balanced`, `ultra`, `code-focused`, … | Estratégia de compressão |
+| `X-ATS-Pipeline` | `compress` (rápido) / `optimize` (completo) | Pipeline |
+| `X-ATS-Use-Ollama` | `true` / `false` | Usar Ollama na compressão |
+| `X-ATS-Skip-Optimize` | `true` | Pular compressão (só repassa) |
+
+Resposta inclui headers `X-ATS-Tokens-Before`, `X-ATS-Tokens-After`, `X-ATS-Tokens-Saved`.
+
+### curl
+
+```bash
+curl -s http://localhost:8105/v1/chat/completions \
+  -H "Authorization: Bearer ats-super-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Explique FastAPI em detalhes..."}],
+    "stream": false
+  }'
+```
+
+### Integração manual (legado)
 
 ```python
 import httpx

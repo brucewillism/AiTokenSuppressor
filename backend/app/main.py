@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.routes import api_router
+from app.api.routes.proxy import router as proxy_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.exceptions import register_exception_handlers
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
     app.include_router(api_router)
+    app.include_router(proxy_router)
 
     if settings.prometheus_enabled:
         Instrumentator().instrument(app).expose(app, endpoint="/metrics")

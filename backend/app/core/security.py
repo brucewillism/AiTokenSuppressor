@@ -62,6 +62,9 @@ async def verify_jwt_or_api_key(
     if api_key and api_key == settings.api_key:
         return {"sub": "api_key", "type": "api_key"}
 
+    if credentials and credentials.credentials == settings.api_key:
+        return {"sub": "api_key", "type": "api_key_bearer"}
+
     if credentials:
         payload = decode_access_token(credentials.credentials)
         return payload
