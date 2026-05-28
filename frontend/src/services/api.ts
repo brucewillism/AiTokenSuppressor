@@ -79,6 +79,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       },
     });
   } catch (err) {
+    if (err instanceof TypeError && String(err).includes('fetch')) {
+      throw new Error(
+        'Não foi possível conectar à API (rede/CORS). Teste: curl http://SEU_IP:8100/health e docker compose ps'
+      );
+    }
     if (err instanceof Error && err.name === 'AbortError') {
       if (externalSignal?.aborted) {
         throw new Error('Cancelado.');
@@ -99,8 +104,15 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         'Timeout do proxy (nginx). Ative Modo rápido ou use estratégia code-focused; ultra com Ollama é muito lento na VPS.'
       );
     }
+    if (response.status === 401) {
+      throw new Error(
+        'API_KEY inválida no dashboard. Rebuild do frontend: VITE_API_KEY no .env deve ser igual a API_KEY (docker compose build --no-cache frontend).'
+      );
+    }
     if (response.status === 502 || response.status === 503) {
-      throw new Error('Serviço indisponível (502/503). Verifique se a API está healthy.');
+      throw new Error(
+        'Serviço indisponível (502/503). O container ats-api pode estar parado — na VPS: docker compose ps && docker compose logs api --tail 40'
+      );
     }
     const error = await response.json().catch(() => ({ message: response.statusText }));
     const detail =

@@ -42,6 +42,17 @@ export default function ApiConnectionHint({ error }: ApiConnectionHintProps) {
         estão corretos (o compose não deve sobrescrever com placeholders).
       </p>
       <p className="text-gray-600 mt-2 text-xs leading-relaxed px-4">
+        Testes rápidos:{' '}
+        <code className="text-gray-500">curl http://{host}:8100/health</code>
+        {' · '}
+        <code className="text-gray-500">curl http://{host}:8100/api/health</code>
+      </p>
+      <p className="text-gray-600 mt-2 text-xs leading-relaxed px-4">
+        Redis no compose: <code className="text-gray-500">REDIS_URL=redis://redis:6379/0</code>.
+        Rebuild UI após mudar API_KEY:{' '}
+        <code className="text-gray-500">docker compose build --no-cache frontend</code>
+      </p>
+      <p className="text-gray-600 mt-2 text-xs leading-relaxed px-4">
         Na VPS: <code className="text-gray-500">docker compose ps</code> e{' '}
         <code className="text-gray-500">docker compose logs api --tail 50</code>
       </p>

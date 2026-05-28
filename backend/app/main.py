@@ -31,6 +31,16 @@ async def lifespan(app: FastAPI):
         await init_db()
     except Exception as exc:
         logger.exception("startup_initialization_failed", error=str(exc))
+
+    try:
+        from app.core.redis_client import get_redis
+
+        redis = await get_redis()
+        await redis.ping()
+        logger.info("redis_startup_ok", url=settings.redis_url.split("@")[-1])
+    except Exception as exc:
+        logger.warning("redis_startup_ping_failed", error=str(exc))
+
     APP_INFO.info({"version": "1.0.0", "env": settings.app_env})
     yield
     await close_redis()

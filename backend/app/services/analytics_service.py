@@ -15,6 +15,21 @@ from app.services.token_service import TokenService
 logger = get_logger(__name__)
 
 
+def empty_stats() -> dict[str, Any]:
+    """Fallback quando Postgres/Redis indisponível — evita 500 no dashboard."""
+    return {
+        "total_requests": 0,
+        "total_tokens_saved": 0,
+        "total_cost_saved_usd": 0.0,
+        "average_compression_ratio": 1.0,
+        "average_latency_ms": 0.0,
+        "cache_hit_rate": 0.0,
+        "requests_by_strategy": {},
+        "requests_by_model": {},
+        "recent_requests": [],
+    }
+
+
 class AnalyticsService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
@@ -74,6 +89,13 @@ class AnalyticsService:
         return log
 
     async def get_stats(self, days: int = 7) -> dict[str, Any]:
+        try:
+            return await self._get_stats_from_db(days)
+        except Exception as exc:
+            logger.exception("get_stats_failed", error=str(exc))
+            return empty_stats()
+
+    async def _get_stats_from_db(self, days: int = 7) -> dict[str, Any]:
         since = datetime.now(UTC) - timedelta(days=days)
 
         total_stmt = select(func.count(RequestLog.id)).where(RequestLog.created_at >= since)
