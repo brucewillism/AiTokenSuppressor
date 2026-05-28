@@ -74,9 +74,9 @@ export default function Health() {
                 {info.latency_ms != null && (
                   <p className="text-gray-400 text-sm">Latência: {info.latency_ms.toFixed(1)}ms</p>
                 )}
-                {info.details?.error && (
+                {info.details?.error != null ? (
                   <p className="text-red-400/80 text-xs mt-2 break-all">{String(info.details.error)}</p>
-                )}
+                ) : null}
               </div>
             );
           })}
