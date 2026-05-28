@@ -127,6 +127,26 @@ async def test_v1_chat_completions_proxy(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_optimize_keeps_short_user_message(client):
+    """Prompts curtos (ex. 'teste') não podem voltar messages=[]."""
+    response = await client.post(
+        "/optimize",
+        headers=HEADERS,
+        json={
+            "messages": [{"role": "user", "content": "teste"}],
+            "strategy": "fast",
+            "use_ollama": False,
+            "use_memory": False,
+            "check_semantic_loss": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["messages"]) >= 1
+    assert any(m["content"].strip() for m in data["messages"])
+
+
+@pytest.mark.asyncio
 async def test_analyze(client):
     response = await client.post(
         "/analyze",

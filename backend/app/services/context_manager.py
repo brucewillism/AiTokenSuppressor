@@ -26,16 +26,33 @@ class ContextManager:
 
     async def classify_irrelevant(self, messages: list[dict]) -> list[int]:
         irrelevant: list[int] = []
+        non_system_indices = [
+            i for i, m in enumerate(messages) if m.get("role") != "system"
+        ]
+        last_user_idx = next(
+            (i for i in range(len(messages) - 1, -1, -1) if messages[i].get("role") == "user"),
+            None,
+        )
+        filler = frozenset({"ok", "thanks", "thank you", "got it", "sure", "yes", "no"})
+
         for i, msg in enumerate(messages):
             score = self.relevance.score_message(msg)
             content = str(msg.get("content", "")).strip()
+            role = msg.get("role", "user")
+
             if score.is_critical:
                 continue
-            if len(content) < 10:
+            # Nunca esvaziar o thread: última mensagem do user ou única não-system
+            if i == last_user_idx:
+                continue
+            if len(non_system_indices) <= 1 and i in non_system_indices:
+                continue
+
+            if len(content) < 10 and role != "user":
                 irrelevant.append(i)
-            elif content.lower() in ("ok", "thanks", "thank you", "got it", "sure", "yes", "no"):
+            elif content.lower() in filler and role != "user":
                 irrelevant.append(i)
-            elif score.total < 0.15 and msg.get("role") != "system":
+            elif score.total < 0.15 and role not in ("system", "user"):
                 irrelevant.append(i)
         return irrelevant
 
