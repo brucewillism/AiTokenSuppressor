@@ -41,8 +41,21 @@ class FingerprintService:
             mh.update(token.encode("utf-8"))
         return mh
 
+    def _index_fingerprint(self, fp: str, mh: MinHash) -> None:
+        if self._lsh is None:
+            return
+        try:
+            self._lsh.insert(fp, mh)
+        except ValueError:
+            # datasketch raises when the same key is inserted twice (e.g. repeat requests)
+            pass
+
     def fingerprint(self, text: str) -> FingerprintResult:
         fp = fingerprint(text)
+        existing = self._store.get(fp)
+        if existing is not None:
+            return existing
+
         ch = content_hash(text)
         mh = self._create_minhash(text)
         sig = mh.hashvalues.tolist()
@@ -54,8 +67,7 @@ class FingerprintService:
             similarity_key=fp,
         )
         self._store[fp] = result
-        if self._lsh is not None:
-            self._lsh.insert(fp, mh)
+        self._index_fingerprint(fp, mh)
         return result
 
     def find_similar(self, text: str) -> list[tuple[str, float]]:
@@ -65,7 +77,6 @@ class FingerprintService:
 
         candidates = self._lsh.query(mh)
         results: list[tuple[str, float]] = []
-        query_fp = self.fingerprint(text)
 
         for key in candidates:
             stored = self._store.get(key)

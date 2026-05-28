@@ -87,6 +87,13 @@ class TestFingerprint:
         b = "What is the weather today"
         assert not svc.is_near_duplicate(a, b, threshold=0.85)
 
+    def test_repeat_fingerprint_does_not_raise(self):
+        svc = FingerprintService()
+        text = "Same prompt submitted twice in the playground"
+        first = svc.fingerprint(text)
+        second = svc.fingerprint(text)
+        assert first.fingerprint == second.fingerprint
+
 
 class TestSpecializedCompression:
     def test_compress_logs(self):

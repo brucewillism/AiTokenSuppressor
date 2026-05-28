@@ -103,7 +103,13 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       throw new Error('Serviço indisponível (502/503). Verifique se a API está healthy.');
     }
     const error = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const detail =
+      typeof error.detail === 'string'
+        ? error.detail
+        : Array.isArray(error.detail)
+          ? error.detail.map((d: { msg?: string }) => d.msg).filter(Boolean).join('; ')
+          : error.detail?.message ?? error.message;
+    throw new Error(detail || `HTTP ${response.status}`);
   }
 
   return response.json();
