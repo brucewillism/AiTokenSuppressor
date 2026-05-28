@@ -38,6 +38,7 @@ async def optimize_prompt(
         user_id=request.user_id,
         max_tokens=request.max_tokens,
         check_semantic_loss=request.check_semantic_loss,
+        use_ollama=request.use_ollama,
         cost_budget_usd=request.cost_budget_usd,
     )
     return OptimizeResponse(**result)

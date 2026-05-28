@@ -55,16 +55,22 @@ function getDirectHealthUrl(): string | null {
   return null;
 }
 
-const REQUEST_TIMEOUT_MS = 180_000;
+const REQUEST_TIMEOUT_MS = 300_000;
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export type RequestOptions = RequestInit & { timeoutMs?: number };
+
+async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, signal: externalSignal, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  const onExternalAbort = () => controller.abort();
+  externalSignal?.addEventListener('abort', onExternalAbort);
 
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
+      ...fetchOptions,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
@@ -74,18 +80,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     });
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
+      if (externalSignal?.aborted) {
+        throw new Error('Cancelado.');
+      }
       throw new Error(
-        'Tempo esgotado (3 min). Use estratégia code-focused ou desative Ollama; ultra/balanced chamam o LLM local.'
+        'Tempo esgotado (5 min). Ative Modo rápido, use code-focused, ou aguarde — ultra/balanced com Ollama podem levar vários minutos.'
       );
     }
     throw err;
   } finally {
     clearTimeout(timeoutId);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
   }
 
   if (!response.ok) {
+    if (response.status === 504) {
+      throw new Error(
+        'Timeout do proxy (nginx). Ative Modo rápido ou use estratégia code-focused; ultra com Ollama é muito lento na VPS.'
+      );
+    }
     if (response.status === 502 || response.status === 503) {
-      throw new Error('Bad Gateway');
+      throw new Error('Serviço indisponível (502/503). Verifique se a API está healthy.');
     }
     const error = await response.json().catch(() => ({ message: response.statusText }));
     throw new Error(error.message || `HTTP ${response.status}`);
@@ -128,10 +143,15 @@ export const api = {
   compress: (
     messages: Array<{ role: string; content: string }>,
     strategy = 'balanced',
-    options?: { checkSemanticLoss?: boolean; useOllama?: boolean },
+    options?: {
+      checkSemanticLoss?: boolean;
+      useOllama?: boolean;
+      signal?: AbortSignal;
+    },
   ) =>
     request('/compress', {
       method: 'POST',
+      signal: options?.signal,
       body: JSON.stringify({
         messages,
         strategy,
@@ -144,16 +164,24 @@ export const api = {
   optimize: (
     messages: Array<{ role: string; content: string }>,
     strategy = 'balanced',
-    options?: { useMemory?: boolean; useRag?: boolean; checkSemanticLoss?: boolean },
+    options?: {
+      useMemory?: boolean;
+      useRag?: boolean;
+      checkSemanticLoss?: boolean;
+      useOllama?: boolean;
+      signal?: AbortSignal;
+    },
   ) =>
     request('/optimize', {
       method: 'POST',
+      signal: options?.signal,
       body: JSON.stringify({
         messages,
         strategy,
         use_memory: options?.useMemory ?? false,
         use_rag: options?.useRag ?? false,
         check_semantic_loss: options?.checkSemanticLoss ?? false,
+        ...(options?.useOllama !== undefined ? { use_ollama: options.useOllama } : {}),
       }),
     }),
 };

@@ -94,6 +94,7 @@ class OptimizeRequest(BaseModel):
     user_id: str = "default"
     max_tokens: int | None = None
     check_semantic_loss: bool = True
+    use_ollama: bool | None = None
     cost_budget_usd: float | None = None
 
 

@@ -1,55 +1,76 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 
 const STRATEGIES = ['aggressive', 'balanced', 'ultra', 'semantic', 'code-focused', 'chat-focused'];
+const SLOW_STRATEGIES = new Set(['ultra', 'balanced', 'aggressive', 'semantic', 'chat-focused']);
+
+function formatElapsed(ms: number): string {
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+}
 
 export default function Playground() {
   const [input, setInput] = useState('You are a helpful assistant.\n\nUser: Explain how to build a REST API with FastAPI including authentication, database models, and error handling. Provide detailed examples with code.');
-  const [strategy, setStrategy] = useState('balanced');
+  const [strategy, setStrategy] = useState('code-focused');
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fastMode, setFastMode] = useState(true);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const handleCompress = async () => {
+  const slowRun = !fastMode && SLOW_STRATEGIES.has(strategy);
+
+  useEffect(() => {
+    if (!loading) {
+      setElapsedMs(0);
+      return;
+    }
+    const start = Date.now();
+    const id = window.setInterval(() => setElapsedMs(Date.now() - start), 1000);
+    return () => window.clearInterval(id);
+  }, [loading]);
+
+  const buildMessages = () => [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: input },
+  ];
+
+  const runAction = async (action: 'compress' | 'optimize') => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
+    const messages = buildMessages();
+    const opts = {
+      checkSemanticLoss: fastMode ? false : undefined,
+      useOllama: fastMode ? false : undefined,
+      signal: controller.signal,
+    };
+
     try {
-      const messages = [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        { role: 'user', content: input },
-      ];
-      const data = await api.compress(messages, strategy, {
-        checkSemanticLoss: fastMode ? false : undefined,
-        useOllama: fastMode ? false : undefined,
-      });
+      const data =
+        action === 'compress'
+          ? await api.compress(messages, strategy, opts)
+          : await api.optimize(messages, strategy, {
+              ...opts,
+              useMemory: fastMode ? false : true,
+              useRag: false,
+            });
       setResult(data as Record<string, unknown>);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao comprimir');
+      setError(err instanceof Error ? err.message : 'Erro na requisição');
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
   };
 
-  const handleOptimize = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const messages = [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        { role: 'user', content: input },
-      ];
-      const data = await api.optimize(messages, strategy, {
-        useMemory: fastMode ? false : true,
-        useRag: false,
-        checkSemanticLoss: fastMode ? false : undefined,
-      });
-      setResult(data as Record<string, unknown>);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao otimizar');
-    } finally {
-      setLoading(false);
-    }
+  const handleCancel = () => {
+    abortRef.current?.abort();
   };
 
   return (
@@ -60,11 +81,26 @@ export default function Playground() {
         <p className="text-gray-500 text-xs mt-2 max-w-2xl">
           Estratégias <span className="text-gray-400">ultra</span>,{' '}
           <span className="text-gray-400">balanced</span> e{' '}
-          <span className="text-gray-400">aggressive</span> usam Ollama (pode levar 1–3 min na VPS).
-          Para teste rápido use <span className="text-primary-400">code-focused</span> ou mantenha{' '}
+          <span className="text-gray-400">aggressive</span> com Ollama podem levar 2–5 min na VPS.
+          Para teste rápido use <span className="text-primary-400">code-focused</span> e mantenha{' '}
           <span className="text-primary-400">Modo rápido</span> ativo.
         </p>
       </div>
+
+      {slowRun && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 text-amber-200 text-sm">
+          <strong>Atenção:</strong> estratégia <em>{strategy}</em> com Modo rápido desligado usa Ollama na
+          VPS e pode demorar vários minutos. Ative Modo rápido ou troque para{' '}
+          <button
+            type="button"
+            className="underline text-primary-300"
+            onClick={() => setStrategy('code-focused')}
+          >
+            code-focused
+          </button>
+          .
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -73,7 +109,8 @@ export default function Playground() {
             <select
               value={strategy}
               onChange={(e) => setStrategy(e.target.value)}
-              className="w-full bg-dark-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              disabled={loading}
+              className="w-full bg-dark-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
             >
               {STRATEGIES.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -86,6 +123,7 @@ export default function Playground() {
               type="checkbox"
               checked={fastMode}
               onChange={(e) => setFastMode(e.target.checked)}
+              disabled={loading}
               className="rounded border-gray-600 bg-dark-800 text-primary-500 focus:ring-primary-500"
             />
             Modo rápido (sem Ollama para métrica semântica / memória)
@@ -96,26 +134,36 @@ export default function Playground() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              disabled={loading}
               rows={12}
-              className="w-full bg-dark-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="w-full bg-dark-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:opacity-50"
             />
           </div>
 
           <div className="flex gap-3">
             <button
-              onClick={handleCompress}
+              onClick={() => runAction('compress')}
               disabled={loading}
               className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
             >
-              {loading ? 'Processando...' : 'Comprimir'}
+              {loading ? `Processando… ${formatElapsed(elapsedMs)}` : 'Comprimir'}
             </button>
             <button
-              onClick={handleOptimize}
+              onClick={() => runAction('optimize')}
               disabled={loading}
               className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
             >
-              {loading ? 'Processando...' : 'Otimizar Completo'}
+              {loading ? `Processando… ${formatElapsed(elapsedMs)}` : 'Otimizar Completo'}
             </button>
+            {loading && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-4 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:bg-dark-700 text-sm"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
 
           {error && (

@@ -74,6 +74,7 @@ class OptimizeService:
         user_id: str = "default",
         max_tokens: int | None = None,
         check_semantic_loss: bool = True,
+        use_ollama: bool | None = None,
         cost_budget_usd: float | None = None,
     ) -> dict[str, Any]:
         start = time.perf_counter()
@@ -189,7 +190,10 @@ class OptimizeService:
                 operations.append("adaptive_strategy:aggressive")
 
         compressed, comp_ops = await self.compression.compress_prompt(
-            msg_dicts, strategy=effective_strategy, max_tokens=max_tokens,
+            msg_dicts,
+            strategy=effective_strategy,
+            max_tokens=max_tokens,
+            use_ollama=use_ollama,
         )
         operations.extend(comp_ops)
 
