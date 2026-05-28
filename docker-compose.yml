@@ -16,6 +16,7 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       API_KEY: ${API_KEY}
+      ROOT_PATH: ${ROOT_PATH:-/api}
     ports:
       - "8105:8000"
     extra_hosts:

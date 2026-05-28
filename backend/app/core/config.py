@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     app_debug: bool = False
     app_host: str = "0.0.0.0"
     app_port: int = 8000
+    # Prefixo externo quando a API fica atrás do proxy nginx em /api (Swagger/OpenAPI).
+    root_path: str = ""
     secret_key: str = Field(
         default="change-me-to-a-secure-random-string-min-32-chars",
         min_length=32,

@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         description="Intelligent middleware layer for LLM token optimization",
         version="1.0.0",
+        root_path=settings.root_path,
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
