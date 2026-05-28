@@ -13,8 +13,14 @@ from app.services.ollama_service import OllamaService
 router = APIRouter(prefix="/health", tags=["Health"])
 
 
-@router.get("", response_model=HealthResponse)
-async def health() -> HealthResponse:
+@router.get("")
+async def health() -> dict:
+    """Health check público (load balancers, Docker, curl :8100/health)."""
+    return {"status": "ok", "service": "api"}
+
+
+@router.get("/detail", response_model=HealthResponse)
+async def health_detail() -> HealthResponse:
     return HealthResponse(status="healthy", service="api")
 
 

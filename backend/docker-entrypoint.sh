@@ -19,6 +19,14 @@ if user == "postgres" and os.environ.get("POSTGRES_USER", "") not in ("", "postg
     print("AVISO: DATABASE_URL usa 'postgres' mas POSTGRES_USER difere — confira o .env")
 PY
 
+python - <<'PY'
+import os
+key = os.environ.get("API_KEY", "")
+print(f"API_KEY configurada: {'sim' if key else 'NAO'} (prefixo: {key[:8]}...)" if len(key) > 8 else f"API_KEY configurada: {'sim' if key else 'NAO'}")
+print(f"APP_ENV: {os.environ.get('APP_ENV', 'development')}")
+print(f"ROOT_PATH: {os.environ.get('ROOT_PATH', '')}")
+PY
+
 echo "Iniciando uvicorn..."
 python -c "from app.main import app; print('Import app.main: OK')" || {
   echo ""

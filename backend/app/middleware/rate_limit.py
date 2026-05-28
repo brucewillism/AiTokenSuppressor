@@ -24,7 +24,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        if request.url.path in ("/health", "/health/full", "/metrics", "/docs", "/openapi.json"):
+        if request.url.path.startswith("/health") or request.url.path in (
+            "/metrics",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+        ):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"

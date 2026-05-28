@@ -15,6 +15,7 @@ from app.core.logging import get_logger, setup_logging
 from app.core.metrics import APP_INFO
 from app.core.redis_client import close_redis
 from app.middleware.rate_limit import PayloadLimitMiddleware, RateLimitMiddleware
+from app.middleware.request_logging import RequestLoggingMiddleware
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -46,12 +47,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=[
+            "X-ATS-Tokens-Before",
+            "X-ATS-Tokens-After",
+            "X-ATS-Tokens-Saved",
+            "X-ATS-Provider-Used",
+            "X-ATS-Fallback-Chain",
+            "X-ATS-Optimize-Ms",
+        ],
     )
     app.add_middleware(PayloadLimitMiddleware)
     app.add_middleware(RateLimitMiddleware)

@@ -9,6 +9,7 @@ services:
     env_file:
       - .env
     environment:
+      APP_ENV: production
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
@@ -16,7 +17,12 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       API_KEY: ${API_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SECRET_KEY}}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ROOT_PATH: ${ROOT_PATH:-/api}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8100}
       PROXY_DEFAULT_STRATEGY: ${PROXY_DEFAULT_STRATEGY:-fast}
       PROXY_PIPELINE: ${PROXY_PIPELINE:-compress}
       PROXY_USE_MEMORY: ${PROXY_USE_MEMORY:-false}
@@ -30,11 +36,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - ats-network
 
@@ -115,6 +121,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - ats-network
 
