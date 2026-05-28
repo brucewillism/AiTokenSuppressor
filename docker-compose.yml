@@ -1,5 +1,17 @@
 services:
 
+  redis:
+    image: redis:7-alpine
+    container_name: ats-redis
+    restart: unless-stopped
+    ports:
+      - "8106:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ats-network
+
   api:
     build:
       context: ./backend
@@ -35,6 +47,8 @@ services:
       - "8105:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
     healthcheck:
       test:
         [
@@ -69,6 +83,7 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - api
+      - redis
     networks:
       - ats-network
 
@@ -81,14 +96,15 @@ services:
     env_file:
       - .env
     environment:
-      CELERY_BROKER_URL: redis://host.docker.internal:6379/1
-      CELERY_RESULT_BACKEND: redis://host.docker.internal:6379/2
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     ports:
-      - "8104:5556"  # <--- Nova porta do Flower (Antiga: 5556)
+      - "8104:5556"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - celery-worker
+      - redis
     networks:
       - ats-network
 
@@ -99,7 +115,7 @@ services:
       - ./litellm/config.yaml:/app/config.yaml
     command: ["--config", "/app/config.yaml", "--port", "4001"]
     ports:
-      - "8101:4001"  # <--- Nova porta do LiteLLM (Antiga: 4001)
+      - "8101:4001"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -143,7 +159,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     ports:
-      - "8102:9090"  # <--- Nova porta do Prometheus (Antiga: 9091)
+      - "8102:9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -162,7 +178,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "8103:3000"  # <--- Nova porta do Grafana (Antiga: 3001)
+      - "8103:3000"
     depends_on:
       - prometheus
     networks:
@@ -171,6 +187,7 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  redis_data:
 
 networks:
   ats-network:
