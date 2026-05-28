@@ -22,6 +22,9 @@ services:
       PROXY_USE_MEMORY: ${PROXY_USE_MEMORY:-false}
       PROXY_USE_OLLAMA: ${PROXY_USE_OLLAMA:-false}
       PROXY_SKIP_OPTIMIZE: ${PROXY_SKIP_OPTIMIZE:-false}
+      PROXY_PROVIDER_FALLBACK: ${PROXY_PROVIDER_FALLBACK:-groq,openai,anthropic,gemini,deepseek,ollama}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
     ports:
       - "8105:8000"
     extra_hosts:

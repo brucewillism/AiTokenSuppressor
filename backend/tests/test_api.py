@@ -73,10 +73,13 @@ async def test_v1_chat_completions_requires_auth(client):
 
 @pytest.mark.asyncio
 async def test_v1_chat_completions_proxy(client, monkeypatch):
-    async def fake_complete(self, messages, model=None, provider="anthropic", max_tokens=4096, temperature=0.3):
+    async def fake_complete_with_fallback(
+        self, messages, model=None, max_tokens=4096, temperature=0.3
+    ):
         return {
             "content": "Resposta mock",
-            "model": model or "gpt-4o-mini",
+            "model": model or "groq/llama-3.3-70b-versatile",
+            "provider_used": "groq",
             "tokens_input": 10,
             "tokens_output": 5,
             "cost_usd": 0,
@@ -84,7 +87,7 @@ async def test_v1_chat_completions_proxy(client, monkeypatch):
 
     from app.services.litellm_service import LiteLLMService
 
-    monkeypatch.setattr(LiteLLMService, "complete", fake_complete)
+    monkeypatch.setattr(LiteLLMService, "complete_with_fallback", fake_complete_with_fallback)
 
     response = await client.post(
         "/v1/chat/completions",
@@ -102,6 +105,7 @@ async def test_v1_chat_completions_proxy(client, monkeypatch):
     assert data["object"] == "chat.completion"
     assert data["choices"][0]["message"]["content"] == "Resposta mock"
     assert "X-ATS-Tokens-Before" in response.headers
+    assert response.headers.get("X-ATS-Provider-Used") == "groq"
 
 
 @pytest.mark.asyncio

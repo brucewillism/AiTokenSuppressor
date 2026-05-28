@@ -42,10 +42,13 @@ async def list_models(
     _auth: dict = Depends(verify_jwt_or_api_key),
 ) -> ModelListResponse:
     models = [
+        "groq/llama-3.3-70b-versatile",
+        "groq/llama-3.1-8b-instant",
         "gpt-4o",
         "gpt-4o-mini",
         "claude-3-5-sonnet-20241022",
         "claude-3-5-haiku-20241022",
+        "gemini/gemini-1.5-flash",
         "gemini/gemini-1.5-pro",
         "deepseek/deepseek-chat",
         "ollama/llama3.2",

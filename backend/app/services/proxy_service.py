@@ -25,6 +25,8 @@ settings = get_settings()
 
 def infer_provider(model: str) -> str:
     m = model.lower()
+    if m.startswith("groq/") or "groq" in m:
+        return "groq"
     if m.startswith("gpt") or "openai" in m:
         return "openai"
     if "claude" in m or "anthropic" in m:
@@ -35,7 +37,7 @@ def infer_provider(model: str) -> str:
         return "deepseek"
     if "ollama" in m or m.startswith("llama"):
         return "ollama"
-    return "openai"
+    return "groq"
 
 
 def _messages_to_dicts(messages: list[Any]) -> list[dict[str, Any]]:
@@ -152,16 +154,17 @@ class ProxyService:
             tokens_saved = opt_result.get("tokens_saved", 0)
             optimized_dicts = _messages_to_dicts(opt_result["messages"])
 
-        llm_result = await self.litellm.complete(
+        llm_result = await self.litellm.complete_with_fallback(
             messages=optimized_dicts,
             model=request.model,
-            provider=infer_provider(request.model),
             max_tokens=request.max_tokens or 4096,
             temperature=request.temperature if request.temperature is not None else 0.3,
         )
 
         if llm_result.get("error"):
             raise RuntimeError(llm_result["error"])
+
+        provider_used = llm_result.get("provider_used", "unknown")
 
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
         response = ChatCompletionResponse(
@@ -193,6 +196,8 @@ class ProxyService:
             "X-ATS-Optimize-Ms": str(round(optimize_ms, 2)),
             "X-ATS-Strategy": strategy.value,
             "X-ATS-Pipeline": pipeline,
+            "X-ATS-Provider-Used": provider_used,
+            "X-ATS-Fallback-Chain": ",".join(self.litellm.get_fallback_chain()),
         }
         return response, meta_headers
 
@@ -225,10 +230,10 @@ class ProxyService:
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
         created = int(time.time())
 
-        async for chunk in self.litellm.complete_stream(
+        stream_model = request.model
+        async for chunk in self.litellm.complete_stream_with_fallback(
             messages=optimized_dicts,
             model=request.model,
-            provider=infer_provider(request.model),
             max_tokens=request.max_tokens or 4096,
             temperature=request.temperature if request.temperature is not None else 0.3,
         ):
@@ -236,7 +241,7 @@ class ProxyService:
                 "id": completion_id,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": request.model,
+                "model": stream_model,
                 "choices": [
                     {
                         "index": 0,

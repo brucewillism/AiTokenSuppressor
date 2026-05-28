@@ -248,7 +248,14 @@ O endpoint **`POST /v1/chat/completions`** comprime o prompt e encaminha ao LLM 
 1. **Settings → Models → OpenAI API Key:** sua `API_KEY` do `.env` (ex: `ats-super-api-key`)
 2. **Override OpenAI Base URL:** `http://SEU_IP:8100/v1` (ou `http://localhost:8105/v1` direto na API)
 3. Modelo: `gpt-4o-mini`, `gpt-4o`, `claude-3-5-sonnet-20241022`, etc.
-4. Configure no `.env` a chave do provedor real (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …)
+4. Configure no `.env` as chaves dos provedores (tenta nesta ordem após comprimir):
+   `GROQ_API_KEY` → `OPENAI_API_KEY` → `ANTHROPIC_API_KEY` → `GEMINI_API_KEY` → `DEEPSEEK_API_KEY` → Ollama local
+
+   ```env
+   PROXY_PROVIDER_FALLBACK=groq,openai,anthropic,gemini,deepseek,ollama
+   GROQ_API_KEY=gsk_...
+   OPENAI_API_KEY=sk-...
+   ```
 
 Headers opcionais:
 

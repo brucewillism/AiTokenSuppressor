@@ -50,9 +50,11 @@ class Settings(BaseSettings):
     ollama_embed_model: str = "nomic-embed-text"
     ollama_timeout: int = 120
 
+    groq_api_key: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
+    deepseek_api_key: str = ""
     openrouter_api_key: str = ""
 
     jwt_secret_key: str = Field(
@@ -96,6 +98,8 @@ class Settings(BaseSettings):
     proxy_use_memory: bool = False
     proxy_use_ollama: bool = False
     proxy_skip_optimize: bool = False
+    # Ordem de fallback LLM após compressão: groq,openai,anthropic,gemini,deepseek,ollama
+    proxy_provider_fallback: str = "groq,openai,anthropic,gemini,deepseek,ollama"
 
     @field_validator("cors_origins", mode="before")
     @classmethod
