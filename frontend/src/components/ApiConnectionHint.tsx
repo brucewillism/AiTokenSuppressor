@@ -43,7 +43,7 @@ export default function ApiConnectionHint({ error }: ApiConnectionHintProps) {
       </p>
       <p className="text-gray-600 mt-2 text-xs leading-relaxed px-4">
         Testes rápidos:{' '}
-        <code className="text-gray-500">curl http://{host}:8100/health</code>
+        <code className="text-gray-500">curl http://{host}:8100/health/live</code>
         {' · '}
         <code className="text-gray-500">curl http://{host}:8100/api/health</code>
       </p>

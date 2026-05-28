@@ -86,9 +86,9 @@ export default function Health() {
       {!health && <ApiConnectionHint error={error ?? 'API indisponível'} />}
 
       <p className="text-gray-600 text-xs">
-        Health rápido (público):{' '}
-        <a href="/health" className="text-primary-400 hover:underline font-mono">
-          /health
+        Probe JSON (monitoramento):{' '}
+        <a href="/health/live" className="text-primary-400 hover:underline font-mono">
+          /health/live
         </a>
       </p>
     </div>

@@ -19,4 +19,4 @@ echo "=== Status ==="
 docker compose ps
 
 echo ""
-echo "Teste: curl -s http://127.0.0.1:8100/health"
+echo "Teste: curl -s http://127.0.0.1:8100/health/live"

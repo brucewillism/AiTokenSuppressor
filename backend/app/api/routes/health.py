@@ -20,9 +20,15 @@ def _service_dict(health: HealthResponse) -> dict:
     return health.model_dump()
 
 
+@router.get("/live")
+async def health_live() -> dict:
+    """Probe JSON para load balancers (nginx: /health/live). Não use na rota SPA /health."""
+    return {"status": "ok", "service": "api"}
+
+
 @router.get("")
 async def health() -> dict:
-    """Health check público (load balancers, Docker, curl :8100/health)."""
+    """Alias do liveness probe."""
     return {"status": "ok", "service": "api"}
 
 
