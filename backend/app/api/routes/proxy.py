@@ -136,7 +136,7 @@ async def chat_completions(
             status_code=500,
             detail={
                 "error": {
-                    "message": "Proxy processing failed",
+                    "message": f"Proxy processing failed: {exc}",
                     "type": "internal_error",
                 }
             },

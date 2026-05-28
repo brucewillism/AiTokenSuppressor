@@ -27,6 +27,19 @@ from app.services.token_service import TokenService
 logger = get_logger(__name__)
 
 
+def _dict_to_message(data: dict) -> Message:
+    role = data.get("role", "user")
+    if not isinstance(role, MessageRole):
+        try:
+            role = MessageRole(str(role))
+        except ValueError:
+            role = MessageRole.USER
+    content = data.get("content", "")
+    if not isinstance(content, str):
+        content = str(content)
+    return Message(role=role, content=content, name=data.get("name"))
+
+
 class OptimizeService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
@@ -325,16 +338,20 @@ class OptimizeService:
         savings = self.token_service.estimate_savings(tokens_before, tokens_after)
         latency = (time.perf_counter() - start) * 1000
 
-        result_messages = [
-            Message(role=m["role"], content=m["content"], name=m.get("name"))
-            for m in compressed
-        ]
+        result_messages = [_dict_to_message(m) for m in compressed]
 
-        await self.analytics.log_request(
-            "compress", tokens_before, tokens_after,
-            strategy=strategy.value, latency_ms=latency,
-            metadata={"semantic_loss": semantic_loss_score},
-        )
+        try:
+            await self.analytics.log_request(
+                "compress",
+                tokens_before,
+                tokens_after,
+                strategy=strategy.value,
+                model_target=target_model,
+                latency_ms=latency,
+                metadata={"semantic_loss": semantic_loss_score},
+            )
+        except Exception as exc:
+            logger.warning("compress_analytics_skipped", error=str(exc))
 
         return {
             "messages": result_messages,

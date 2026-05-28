@@ -137,7 +137,7 @@ class ProxyService:
         optimize_ms = 0.0
 
         if skip_optimize:
-            optimized_dicts = [m.model_dump() for m in messages]
+            optimized_dicts = _messages_to_dicts(messages)
         else:
             opt_start = time.perf_counter()
             opt_result = await self.run_compression(
@@ -215,7 +215,7 @@ class ProxyService:
         messages = normalize_messages(raw_messages)
 
         if skip_optimize:
-            optimized_dicts = [m.model_dump() for m in messages]
+            optimized_dicts = _messages_to_dicts(messages)
         else:
             opt_result = await self.run_compression(
                 messages,

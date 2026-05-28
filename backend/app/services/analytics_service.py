@@ -54,11 +54,22 @@ class AnalyticsService:
             cache_hit=cache_hit,
             metadata_=metadata or {},
         )
-        self.db.add(log)
-        await self.db.flush()
+        try:
+            self.db.add(log)
+            await self.db.flush()
+        except Exception as exc:
+            logger.warning("analytics_log_db_failed", error=str(exc))
+            try:
+                await self.db.rollback()
+            except Exception:
+                pass
+            return None
 
-        await self.cache.increment_stat("total_requests")
-        await self.cache.increment_stat("total_tokens_saved", tokens_saved)
+        try:
+            await self.cache.increment_stat("total_requests")
+            await self.cache.increment_stat("total_tokens_saved", tokens_saved)
+        except Exception as exc:
+            logger.warning("analytics_log_redis_failed", error=str(exc))
 
         return log
 
