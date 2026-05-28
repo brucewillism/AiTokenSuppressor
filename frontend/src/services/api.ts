@@ -50,7 +50,7 @@ export function getApiDisplayInfo(): ApiDisplayInfo {
 function getDirectHealthUrl(): string | null {
   const configured = import.meta.env.VITE_API_DIRECT_URL?.trim();
   if (configured) {
-    return configured.replace(/\/$/, '') + '/health';
+    return configured.replace(/\/$/, '') + '/health/live';
   }
   return null;
 }
@@ -81,7 +81,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   } catch (err) {
     if (err instanceof TypeError && String(err).includes('fetch')) {
       throw new Error(
-        'Não foi possível conectar à API (rede/CORS). Teste: curl http://SEU_IP:8100/health e docker compose ps'
+        'Não foi possível conectar à API (rede/CORS). Teste: curl http://SEU_IP:8100/health/live e docker compose ps'
       );
     }
     if (err instanceof Error && err.name === 'AbortError') {

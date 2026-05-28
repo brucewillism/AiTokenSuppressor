@@ -9,8 +9,14 @@ echo "=== AI Token Suppressor — validação de roteamento ==="
 echo "BASE_URL=$BASE"
 echo ""
 
-echo "1) GET /health/live (JSON liveness; /health = página React)"
+echo "1) GET /health/live (JSON liveness)"
 curl -sf "$BASE/health/live" | head -c 200
+echo ""
+echo ""
+
+echo "1b) GET /health → redirect /status; GET /status → HTML SPA"
+curl -sfI "$BASE/health" | grep -i '^location:' || true
+curl -sf "$BASE/status" | head -c 120 | grep -q '<!DOCTYPE html\|<html' && echo "OK: /status retorna HTML" || echo "FALHA: /status não retorna HTML"
 echo ""
 echo ""
 
