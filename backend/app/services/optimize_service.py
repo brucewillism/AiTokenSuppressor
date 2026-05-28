@@ -146,7 +146,7 @@ class OptimizeService:
 
         graph_context: list[str] = []
         query = msg_dicts[-1].get("content", "") if msg_dicts else ""
-        if isinstance(query, str) and query:
+        if use_memory and isinstance(query, str) and query:
             self.context_graph.ingest(user_id, query)
             graph_ctx = self.context_graph.build_context(user_id, query)
             if graph_ctx:
