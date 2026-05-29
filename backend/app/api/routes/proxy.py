@@ -184,6 +184,10 @@ async def anthropic_messages(
         x_ats_use_ollama,
         x_ats_skip_optimize,
     )
+    # Claude Code: evita ultra global lento no editor (ConsumoEsperto usa /api/optimize)
+    if not x_ats_strategy and strategy == CompressionStrategy.ULTRA:
+        strategy = CompressionStrategy.FAST
+
     anthropic = AnthropicProxyService(ProxyService(service))
 
     try:
@@ -202,6 +206,7 @@ async def anthropic_messages(
                 headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
                     "X-ATS-Strategy": strategy.value,
                     "X-ATS-Pipeline": pipeline,
                 },

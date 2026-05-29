@@ -63,6 +63,12 @@ def _sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
+def _chunk_text(text: str, size: int = 24) -> list[str]:
+    if not text:
+        return [""]
+    return [text[i : i + size] for i in range(0, len(text), size)]
+
+
 class AnthropicProxyService:
     def __init__(self, proxy: ProxyService) -> None:
         self.proxy = proxy
@@ -182,10 +188,11 @@ class AnthropicProxyService:
         use_ollama: bool | None,
         skip_optimize: bool,
     ) -> AsyncIterator[str]:
-        messages = anthropic_request_to_messages(request)
-        optimized, meta = await self._optimize_messages(
-            messages,
-            model=request.model,
+        """SSE Anthropic. Usa resposta completa + pseudo-stream (Groq stream pode bloquear)."""
+        yield _sse("ping", {"type": "ping"})
+
+        response, meta = await self.create_message(
+            request,
             strategy=strategy,
             pipeline=pipeline,
             use_memory=use_memory,
@@ -193,10 +200,10 @@ class AnthropicProxyService:
             skip_optimize=skip_optimize,
         )
 
-        msg_id = f"msg_{uuid.uuid4().hex[:24]}"
-        model = request.model
-        temp = request.temperature if request.temperature is not None else 0.3
-        output_tokens = 0
+        text = response.content[0].text if response.content else ""
+        msg_id = response.id
+        model = response.model
+        output_tokens = response.usage.output_tokens
 
         yield _sse(
             "message_start",
@@ -210,7 +217,10 @@ class AnthropicProxyService:
                     "model": model,
                     "stop_reason": None,
                     "stop_sequence": None,
-                    "usage": {"input_tokens": 0, "output_tokens": 1},
+                    "usage": {
+                        "input_tokens": response.usage.input_tokens,
+                        "output_tokens": 1,
+                    },
                 },
             },
         )
@@ -223,22 +233,14 @@ class AnthropicProxyService:
             },
         )
 
-        async for chunk in self.proxy.litellm.complete_stream_with_fallback(
-            messages=optimized,
-            model=request.model,
-            max_tokens=request.max_tokens,
-            temperature=temp,
-        ):
-            delta = chunk.get("delta", {})
-            text = delta.get("content", "")
-            if text:
-                output_tokens += max(1, len(text) // 4)
+        for piece in _chunk_text(text):
+            if piece:
                 yield _sse(
                     "content_block_delta",
                     {
                         "type": "content_block_delta",
                         "index": 0,
-                        "delta": {"type": "text_delta", "text": text},
+                        "delta": {"type": "text_delta", "text": piece},
                     },
                 )
 
@@ -260,4 +262,5 @@ class AnthropicProxyService:
             "anthropic_stream_complete",
             strategy=strategy.value,
             ats_tokens_saved=meta.get("X-ATS-Tokens-Saved"),
+            mode="pseudo_stream",
         )
