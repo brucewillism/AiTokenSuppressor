@@ -8,8 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class AnthropicMessage(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    role: Literal["user", "assistant"]
-    content: str | list[dict[str, Any]]
+    role: Literal["user", "assistant", "system"]
+    content: str | list[dict[str, Any]] | None = None
 
 
 class AnthropicMessagesRequest(BaseModel):

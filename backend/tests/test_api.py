@@ -180,6 +180,44 @@ async def test_v1_anthropic_messages_proxy(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_v1_anthropic_messages_accepts_system_in_messages_array(client, monkeypatch):
+    async def fake_complete_with_fallback(
+        self, messages, model=None, max_tokens=4096, temperature=0.3
+    ):
+        return {
+            "content": "ok",
+            "model": model or "claude-3-5-sonnet-20241022",
+            "provider_used": "groq",
+            "tokens_input": 10,
+            "tokens_output": 2,
+            "cost_usd": 0,
+        }
+
+    from app.services.litellm_service import LiteLLMService
+
+    monkeypatch.setattr(LiteLLMService, "complete_with_fallback", fake_complete_with_fallback)
+
+    response = await client.post(
+        "/v1/messages",
+        headers={
+            "x-api-key": API_KEY,
+            "X-ATS-Use-Ollama": "false",
+            "X-ATS-Use-Memory": "false",
+        },
+        json={
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 64,
+            "messages": [
+                {"role": "user", "content": "Hello"},
+                {"role": "system", "content": "You are Claude Code assistant."},
+            ],
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["content"][0]["text"] == "ok"
+
+
+@pytest.mark.asyncio
 async def test_optimize_keeps_short_user_message(client):
     """Prompts curtos (ex. 'teste') não podem voltar messages=[]."""
     response = await client.post(

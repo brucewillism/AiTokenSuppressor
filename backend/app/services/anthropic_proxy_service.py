@@ -45,16 +45,27 @@ def extract_text_content(content: str | list[dict[str, Any]] | None) -> str:
 
 def anthropic_request_to_messages(request: AnthropicMessagesRequest) -> list[Message]:
     internal: list[dict[str, Any]] = []
+    system_parts: list[str] = []
+
     if request.system is not None:
-        system_text = extract_text_content(request.system)
-        if system_text:
-            internal.append({"role": "system", "content": system_text})
+        top = extract_text_content(request.system)
+        if top:
+            system_parts.append(top)
+
     for msg in request.messages:
         text = extract_text_content(msg.content)
+        if msg.role == "system":
+            if text:
+                system_parts.append(text)
+            continue
         role = msg.role
         if role == "assistant" and not text:
             text = "[assistant message]"
         internal.append({"role": role, "content": text})
+
+    if system_parts:
+        internal.insert(0, {"role": "system", "content": "\n\n".join(system_parts)})
+
     return normalize_messages(internal)
 
 
