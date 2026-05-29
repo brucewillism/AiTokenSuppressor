@@ -75,7 +75,11 @@ async def verify_api_key(api_key: str | None = Security(api_key_header)) -> str:
 async def verify_jwt_or_api_key(
     credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
     api_key: str | None = Security(api_key_header),
+    x_api_key: str | None = Security(APIKeyHeader(name="x-api-key", auto_error=False)),
 ) -> dict[str, Any]:
+    if _is_valid_api_key(x_api_key):
+        return {"sub": "api_key", "type": "anthropic_x_api_key"}
+
     if _is_valid_api_key(api_key):
         return {"sub": "api_key", "type": "api_key"}
 
@@ -85,8 +89,8 @@ async def verify_jwt_or_api_key(
         if _is_valid_api_key(token):
             return {"sub": "api_key", "type": "api_key_bearer"}
 
-        # Chaves de provedores (OpenAI/Groq) não são JWT — mensagem clara
-        if token.startswith(("sk-", "gsk_", "gsk-", "xai-")):
+        # Chaves de provedores (OpenAI/Groq/Anthropic) não são JWT — mensagem clara
+        if token.startswith(("sk-", "gsk_", "gsk-", "xai-", "sk-ant-")):
             logger.warning(
                 "auth_provider_key_rejected",
                 hint="client_sent_llm_key_instead_of_ats_api_key",

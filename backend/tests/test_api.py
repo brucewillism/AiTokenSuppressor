@@ -127,6 +127,59 @@ async def test_v1_chat_completions_proxy(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_v1_anthropic_messages_requires_auth(client):
+    response = await client.post(
+        "/v1/messages",
+        json={
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 64,
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_v1_anthropic_messages_proxy(client, monkeypatch):
+    async def fake_complete_with_fallback(
+        self, messages, model=None, max_tokens=4096, temperature=0.3
+    ):
+        return {
+            "content": "Olá do ATS",
+            "model": model or "claude-3-5-sonnet-20241022",
+            "provider_used": "anthropic",
+            "tokens_input": 12,
+            "tokens_output": 6,
+            "cost_usd": 0,
+        }
+
+    from app.services.litellm_service import LiteLLMService
+
+    monkeypatch.setattr(LiteLLMService, "complete_with_fallback", fake_complete_with_fallback)
+
+    response = await client.post(
+        "/v1/messages",
+        headers={
+            "x-api-key": API_KEY,
+            "X-ATS-Use-Ollama": "false",
+            "X-ATS-Use-Memory": "false",
+        },
+        json={
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 64,
+            "messages": [{"role": "user", "content": "Please note that " * 40 + "teste"}],
+            "stream": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["type"] == "message"
+    assert data["role"] == "assistant"
+    assert data["content"][0]["text"] == "Olá do ATS"
+    assert "X-ATS-Tokens-Before" in response.headers
+
+
+@pytest.mark.asyncio
 async def test_optimize_keeps_short_user_message(client):
     """Prompts curtos (ex. 'teste') não podem voltar messages=[]."""
     response = await client.post(
