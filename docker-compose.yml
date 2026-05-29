@@ -47,8 +47,14 @@ services:
       PROXY_USE_OLLAMA: ${PROXY_USE_OLLAMA:-false}
       PROXY_SKIP_OPTIMIZE: ${PROXY_SKIP_OPTIMIZE:-false}
       PROXY_PROVIDER_FALLBACK: ${PROXY_PROVIDER_FALLBACK:-groq,openai,anthropic,gemini,deepseek,ollama}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-5}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-3}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    deploy:
+      resources:
+        limits:
+          memory: 768M
     ports:
       - "8105:8000"
     extra_hosts:
@@ -72,6 +78,8 @@ services:
       - ats-network
 
   celery-worker:
+    profiles:
+      - workers
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -95,6 +103,8 @@ services:
       - ats-network
 
   flower:
+    profiles:
+      - workers
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -116,6 +126,8 @@ services:
       - ats-network
 
   litellm:
+    profiles:
+      - litellm
     image: ghcr.io/berriai/litellm:main-latest
     container_name: ats-litellm
     volumes:
@@ -162,6 +174,8 @@ services:
       - ats-network
 
   prometheus:
+    profiles:
+      - monitoring
     image: prom/prometheus:v2.54.1
     container_name: ats-prometheus
     volumes:
@@ -176,6 +190,8 @@ services:
       - ats-network
 
   grafana:
+    profiles:
+      - monitoring
     image: grafana/grafana:11.3.0
     container_name: ats-grafana
     environment:
