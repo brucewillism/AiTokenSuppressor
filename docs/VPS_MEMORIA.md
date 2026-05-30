@@ -36,6 +36,8 @@ DATABASE_MAX_OVERFLOW=3
 
 **Evite** `PROXY_DEFAULT_STRATEGY=ultra` + `PROXY_USE_OLLAMA=true` na mesma VPS: cada request do Claude Code dispara compressão pesada + modelo local.
 
+Valores com espaço no `.env` precisam de aspas (ex.: `APP_NAME="AI Token Suppressor"`) — senão o Docker Compose falha com `key cannot contain a space`.
+
 O endpoint `/v1/messages` (Claude Code) **ignora** ollama/memória do `.env` salvo header explícito `X-ATS-Use-Ollama` / `X-ATS-Use-Memory`.
 
 ## Qualidade sem estourar RAM
