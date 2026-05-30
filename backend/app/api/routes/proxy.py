@@ -14,9 +14,13 @@ from app.schemas.openai_proxy import (
     ModelCard,
     ModelListResponse,
 )
-from app.services.anthropic_proxy_service import AnthropicProxyService
+from app.services.anthropic_proxy_service import (
+    AnthropicProxyService,
+    anthropic_request_to_messages,
+)
 from app.services.optimize_service import OptimizeService
-from app.services.proxy_service import ProxyService
+from app.services.proxy_service import ProxyService, normalize_messages
+from app.services.proxy_strategy_service import resolve_proxy_compression
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -86,6 +90,13 @@ async def chat_completions(
         use_ollama = _header_bool(x_ats_use_ollama, True)
 
     proxy = ProxyService(service)
+    normalized = normalize_messages([m.model_dump() for m in request.messages])
+    strategy, _ = resolve_proxy_compression(
+        normalized,
+        strategy,
+        strategy_explicit=bool(x_ats_strategy),
+        use_ollama=use_ollama,
+    )
 
     try:
         if request.stream:
@@ -184,17 +195,19 @@ async def anthropic_messages(
         x_ats_use_ollama,
         x_ats_skip_optimize,
     )
-    # Claude Code: pipeline leve na VPS — não herda ultra/ollama/memória do .env global
-    if not x_ats_strategy and strategy in (
-        CompressionStrategy.ULTRA,
-        CompressionStrategy.AGGRESSIVE,
-        CompressionStrategy.SEMANTIC,
-    ):
-        strategy = CompressionStrategy.FAST
+    # Claude Code: não herda ollama/memória pesada do .env global
     if x_ats_use_memory is None:
         use_memory = False
     if x_ats_use_ollama is None:
         use_ollama = False
+
+    internal_messages = anthropic_request_to_messages(request)
+    strategy, _ = resolve_proxy_compression(
+        internal_messages,
+        strategy,
+        strategy_explicit=bool(x_ats_strategy),
+        use_ollama=use_ollama,
+    )
 
     anthropic = AnthropicProxyService(ProxyService(service))
 

@@ -38,6 +38,27 @@ DATABASE_MAX_OVERFLOW=3
 
 O endpoint `/v1/messages` (Claude Code) **ignora** ollama/memória do `.env` salvo header explícito `X-ATS-Use-Ollama` / `X-ATS-Use-Memory`.
 
+## Qualidade sem estourar RAM
+
+O supressor usa **estratégia automática por tamanho** (sem Ollama):
+
+| Tokens do prompt | Estratégia | Economia | RAM |
+|------------------|------------|----------|-----|
+| &lt; 400 | `fast` | leve | mínima |
+| 400–800+ com código | `code-focused` | alta em código | baixa |
+| 800+ geral | `balanced` | alta (dedup + specialized) | baixa |
+| `ultra` no .env sem Ollama | vira `balanced` | quase igual, sem modelo local | **muito menor** |
+
+Cache Redis (128 MB, LRU) acelera requests repetidos — **melhora desempenho** sem perder qualidade.
+
+```env
+LOW_MEMORY_MODE=true
+PROMETHEUS_ENABLED=false
+COMPRESS_AUTO_BALANCED_TOKENS=800
+```
+
+Para forçar `ultra` + Ollama (máxima economia, **muita RAM**): header `X-ATS-Strategy: ultra` + `X-ATS-Use-Ollama: true`.
+
 ## Ollama no host
 
 Se Ollama roda fora do Docker na porta 11999:

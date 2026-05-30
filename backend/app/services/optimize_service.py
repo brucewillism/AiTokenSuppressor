@@ -22,6 +22,7 @@ from app.services.memory_service import MemoryService
 from app.services.rag_service import RAGService
 from app.services.router_service import RouterService
 from app.services.semantic_loss_service import SemanticLossService
+from app.services.proxy_strategy_service import map_strategy_without_ollama
 from app.services.token_heatmap_service import TokenHeatmapService
 from app.services.token_service import TokenService
 
@@ -352,6 +353,14 @@ class OptimizeService:
         effective_strategy, auto_ops = resolve_compression_strategy(
             strategy, tokens_before, use_ollama,
         )
+        operations = list(auto_ops)
+        if use_ollama is not True:
+            mapped = map_strategy_without_ollama(effective_strategy)
+            if mapped != effective_strategy:
+                operations.append(
+                    f"no_ollama:{effective_strategy.value}->{mapped.value}"
+                )
+                effective_strategy = mapped
         cache_key = self._compress_cache_key(
             msg_dicts, effective_strategy, use_ollama, preserve_system,
         )
@@ -378,7 +387,7 @@ class OptimizeService:
                 "savings_percent": cached["savings_percent"],
                 "compression_ratio": cached["compression_ratio"],
                 "strategy": effective_strategy,
-                "operations_applied": [*auto_ops, "cache_hit"],
+                "operations_applied": [*operations, "cache_hit"],
                 "latency_ms": round(latency, 2),
                 "semantic_loss_score": cached.get("semantic_loss_score"),
                 "content_types": cached.get("content_types", {}),
@@ -396,7 +405,6 @@ class OptimizeService:
                 str(s["index"]): s["content_type"] for s in heatmap_data["segments"]
             }
 
-        operations = list(auto_ops)
         compressed, comp_ops = await self.compression.compress_prompt(
             msg_dicts,
             strategy=effective_strategy,

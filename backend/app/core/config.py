@@ -102,6 +102,11 @@ class Settings(BaseSettings):
 
     prometheus_enabled: bool = True
 
+    # VPS: desliga métricas in-process; compose pode forçar false
+    low_memory_mode: bool = False
+    # Prompts acima disso usam balanced/code-focused no proxy (sem Ollama)
+    compress_auto_balanced_tokens: int = 800
+
     proxy_default_strategy: str = "fast"
     proxy_pipeline: str = "compress"
     proxy_use_memory: bool = False
