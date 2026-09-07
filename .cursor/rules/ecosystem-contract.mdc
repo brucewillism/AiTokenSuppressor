@@ -1,0 +1,20 @@
+---
+description: Contrato compartilhado do ecossistema (JARVIS/EDITH/ConsumoEsperto/ATS) — ler antes de qualquer implementação
+alwaysApply: true
+---
+
+# Ecossistema — Contrato obrigatório
+
+Antes de **qualquer implementação, endpoint, integração, header, erro, métrica ou mudança de API** neste repositório (`ai-token-suppressor` / `ats`):
+
+1. Leia e respeite **`00-CONTRATO-COMPARTILHADO.md`** (cópia canônica em `docs/ECOSYSTEM_CONTRACT.md`).
+2. O contrato é **v1 CONGELADO**. Não altere sozinho neste repo. Mudança exige bump e sync nos quatro projetos: `jarvis`, `edith`, `consumo-esperto`, `ats`.
+3. Em saltos entre serviços, propague o **envelope** (`X-Eco-*`): `Trace-Id`, `Span-Id`, `Parent-Span-Id`, `User-Id`, `App-Origin`, `App-Current`, `Mode`, `Deadline`, `Sensitivity`.
+4. Respeite modos (`INTERACTIVE` / `BALANCED` / `DEEP`), paths (`INSTANT` / `FAST` / `DEEP`), códigos de erro canônicos e métricas `t_*` / `tokens_*` / `ats_mode`.
+5. ATS aparece no plano como estágio `ats?` e `ats: BYPASS | ENABLED`. Emita `t_ats_ms`, `tokens_in_original`, `tokens_in_final`, `compression_ratio`, `ats_mode`.
+6. Ollama no ecossistema é acessado **apenas pela E.D.I.T.H.** — o ATS não abre Ollama “por conta própria” no desenho do ecossistema compartilhado (exceto uso legado local documentado).
+7. Postgres: banco `ats_db` com role próprio; Redis prefixo `ats:`. Sem ler bancos de outros serviços.
+8. Auth entre serviços: HMAC (`X-Eco-Signature`, `X-Eco-Timestamp`, `X-Eco-Nonce`) + scopes; default deny.
+9. Health deve expor `contract_version: "1"`.
+
+Se a tarefa conflitar com o contrato, **pare e alinhe** — não invente headers, códigos de erro ou paths extras.
