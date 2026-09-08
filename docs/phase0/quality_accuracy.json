@@ -1,0 +1,1024 @@
+{
+  "generated_at": "2026-09-07T21:44:56Z",
+  "provider": "groq",
+  "model": "llama-3.1-8b-instant",
+  "n_cases": 28,
+  "accuracy_full": 0.0,
+  "accuracy_compressed": 0.0,
+  "accuracy_must_preserve": 0.0,
+  "critical_info_loss_rate_given_full_correct": null,
+  "critical_fact_drop_rate_naive_compress": 0.0,
+  "must_preserve_rescues": 0,
+  "must_preserve_failures_when_loss": 0,
+  "cases": [
+    {
+      "id": "card_due",
+      "expected": "25",
+      "tokens_full": 900,
+      "tokens_compressed": 493,
+      "tokens_must_preserve": 497,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 900,
+          "latency_ms": 717.0
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 493,
+          "latency_ms": 410.4
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 497,
+          "latency_ms": 426.0
+        }
+      }
+    },
+    {
+      "id": "balance",
+      "expected": "3847.50",
+      "tokens_full": 905,
+      "tokens_compressed": 498,
+      "tokens_must_preserve": 502,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 905,
+          "latency_ms": 481.3
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 498,
+          "latency_ms": 603.3
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 502,
+          "latency_ms": 782.6
+        }
+      }
+    },
+    {
+      "id": "invoice",
+      "expected": "1299.00",
+      "tokens_full": 909,
+      "tokens_compressed": 502,
+      "tokens_must_preserve": 506,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 909,
+          "latency_ms": 646.7
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 502,
+          "latency_ms": 829.1
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 506,
+          "latency_ms": 604.1
+        }
+      }
+    },
+    {
+      "id": "limit",
+      "expected": "6500",
+      "tokens_full": 897,
+      "tokens_compressed": 490,
+      "tokens_must_preserve": 494,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 897,
+          "latency_ms": 510.1
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 606.9
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 494,
+          "latency_ms": 720.9
+        }
+      }
+    },
+    {
+      "id": "name",
+      "expected": "Marina Duarte Souza",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 598.6
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 497.8
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 528.8
+        }
+      }
+    },
+    {
+      "id": "date",
+      "expected": "2026-06-18",
+      "tokens_full": 897,
+      "tokens_compressed": 490,
+      "tokens_must_preserve": 494,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 897,
+          "latency_ms": 419.3
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 422.0
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 494,
+          "latency_ms": 429.9
+        }
+      }
+    },
+    {
+      "id": "sum",
+      "expected": "250.00",
+      "tokens_full": 909,
+      "tokens_compressed": 502,
+      "tokens_must_preserve": 506,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 909,
+          "latency_ms": 549.4
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 502,
+          "latency_ms": 408.6
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 506,
+          "latency_ms": 403.5
+        }
+      }
+    },
+    {
+      "id": "city",
+      "expected": "Recife",
+      "tokens_full": 896,
+      "tokens_compressed": 489,
+      "tokens_must_preserve": 493,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 896,
+          "latency_ms": 398.4
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 489,
+          "latency_ms": 582.0
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 493,
+          "latency_ms": 659.0
+        }
+      }
+    },
+    {
+      "id": "code",
+      "expected": "K7M9-QP2L-44ZX",
+      "tokens_full": 903,
+      "tokens_compressed": 496,
+      "tokens_must_preserve": 500,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 903,
+          "latency_ms": 695.2
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 496,
+          "latency_ms": 495.2
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 500,
+          "latency_ms": 442.5
+        }
+      }
+    },
+    {
+      "id": "rate",
+      "expected": "11.25",
+      "tokens_full": 897,
+      "tokens_compressed": 490,
+      "tokens_must_preserve": 494,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 897,
+          "latency_ms": 568.2
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 1036.1
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 494,
+          "latency_ms": 710.8
+        }
+      }
+    },
+    {
+      "id": "count",
+      "expected": "7",
+      "tokens_full": 891,
+      "tokens_compressed": 484,
+      "tokens_must_preserve": 488,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 891,
+          "latency_ms": 778.5
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 484,
+          "latency_ms": 594.8
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 488,
+          "latency_ms": 710.9
+        }
+      }
+    },
+    {
+      "id": "phone",
+      "expected": "3344-7788",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 568.2
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 695.6
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 423.6
+        }
+      }
+    },
+    {
+      "id": "tax",
+      "expected": "42.17",
+      "tokens_full": 896,
+      "tokens_compressed": 489,
+      "tokens_must_preserve": 493,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 896,
+          "latency_ms": 428.1
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 489,
+          "latency_ms": 436.4
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 493,
+          "latency_ms": 427.8
+        }
+      }
+    },
+    {
+      "id": "sku",
+      "expected": "Filtro HEPA Pro",
+      "tokens_full": 900,
+      "tokens_compressed": 493,
+      "tokens_must_preserve": 497,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 900,
+          "latency_ms": 569.6
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 493,
+          "latency_ms": 547.0
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 497,
+          "latency_ms": 548.4
+        }
+      }
+    },
+    {
+      "id": "deadline",
+      "expected": "2026-11-30",
+      "tokens_full": 899,
+      "tokens_compressed": 492,
+      "tokens_must_preserve": 496,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 899,
+          "latency_ms": 514.4
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 492,
+          "latency_ms": 585.6
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 496,
+          "latency_ms": 754.2
+        }
+      }
+    },
+    {
+      "id": "ticket",
+      "expected": "Carla Nunes",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 519.0
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 593.8
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 506.8
+        }
+      }
+    },
+    {
+      "id": "ibge",
+      "expected": "2611606",
+      "tokens_full": 894,
+      "tokens_compressed": 487,
+      "tokens_must_preserve": 491,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 894,
+          "latency_ms": 530.2
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 487,
+          "latency_ms": 431.2
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 491,
+          "latency_ms": 437.0
+        }
+      }
+    },
+    {
+      "id": "pix",
+      "expected": "12.345.678/0001-90",
+      "tokens_full": 902,
+      "tokens_compressed": 495,
+      "tokens_must_preserve": 499,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 902,
+          "latency_ms": 425.6
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 495,
+          "latency_ms": 509.1
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 499,
+          "latency_ms": 519.0
+        }
+      }
+    },
+    {
+      "id": "temp",
+      "expected": "67.4",
+      "tokens_full": 891,
+      "tokens_compressed": 484,
+      "tokens_must_preserve": 488,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 891,
+          "latency_ms": 521.8
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 484,
+          "latency_ms": 445.8
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 488,
+          "latency_ms": 425.5
+        }
+      }
+    },
+    {
+      "id": "ver",
+      "expected": "1.1.0-rc2",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 650.8
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 532.3
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 819.4
+        }
+      }
+    },
+    {
+      "id": "seats",
+      "expected": "42",
+      "tokens_full": 888,
+      "tokens_compressed": 481,
+      "tokens_must_preserve": 485,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 888,
+          "latency_ms": 535.4
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 481,
+          "latency_ms": 648.6
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 485,
+          "latency_ms": 802.5
+        }
+      }
+    },
+    {
+      "id": "lat",
+      "expected": "180",
+      "tokens_full": 892,
+      "tokens_compressed": 485,
+      "tokens_must_preserve": 489,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 892,
+          "latency_ms": 656.8
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 485,
+          "latency_ms": 508.9
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 489,
+          "latency_ms": 698.5
+        }
+      }
+    },
+    {
+      "id": "hash",
+      "expected": "a3f91c",
+      "tokens_full": 886,
+      "tokens_compressed": 479,
+      "tokens_must_preserve": 483,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 886,
+          "latency_ms": 686.4
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 479,
+          "latency_ms": 472.1
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 483,
+          "latency_ms": 408.8
+        }
+      }
+    },
+    {
+      "id": "room",
+      "expected": "B-214",
+      "tokens_full": 891,
+      "tokens_compressed": 484,
+      "tokens_must_preserve": 488,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 891,
+          "latency_ms": 423.0
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 484,
+          "latency_ms": 420.5
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 488,
+          "latency_ms": 417.4
+        }
+      }
+    },
+    {
+      "id": "qty",
+      "expected": "128",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 717.5
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 901.3
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 828.3
+        }
+      }
+    },
+    {
+      "id": "iban",
+      "expected": "9910",
+      "tokens_full": 893,
+      "tokens_compressed": 486,
+      "tokens_must_preserve": 490,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 893,
+          "latency_ms": 612.5
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 486,
+          "latency_ms": 390.0
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 502.2
+        }
+      }
+    },
+    {
+      "id": "score",
+      "expected": "0.73",
+      "tokens_full": 897,
+      "tokens_compressed": 490,
+      "tokens_must_preserve": 494,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 897,
+          "latency_ms": 445.9
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 490,
+          "latency_ms": 414.4
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 494,
+          "latency_ms": 490.7
+        }
+      }
+    },
+    {
+      "id": "branch",
+      "expected": "hotfix/token-leak-202609",
+      "tokens_full": 891,
+      "tokens_compressed": 484,
+      "tokens_must_preserve": 488,
+      "critical_fact_present_after_naive_compress": true,
+      "full_ok": false,
+      "compressed_ok": false,
+      "must_preserve_ok": false,
+      "info_loss_event": false,
+      "must_preserve_rescued": false,
+      "replies": {
+        "full": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 891,
+          "latency_ms": 584.7
+        },
+        "compressed": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 484,
+          "latency_ms": 499.2
+        },
+        "must_preserve": {
+          "ok": false,
+          "reply": "",
+          "error": "Client error '401 Unauthorized' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401",
+          "tokens": 488,
+          "latency_ms": 524.1
+        }
+      }
+    }
+  ],
+  "method_note": "Answer accuracy = expected substring in model reply. must_preserve simulated by not compressing the critical block (API must_preserve not yet in CompressionService)."
+}

@@ -1,0 +1,419 @@
+{
+  "generated_at": "2026-09-07T20:40:29Z",
+  "cost_audit": {
+    "status": "no_historical_spend_available",
+    "findings": [
+      "RequestLog stores cost_saved_usd as ESTIMATED savings from token deltas × static rates in config (COST_CLAUDE_*, COST_OPENAI_*), not invoices from providers.",
+      "There is no table/field for actual USD charged by Groq/OpenAI/Anthropic/Gemini.",
+      "LiteLLM complete_with_fallback may return cost_usd per call, but it is not aggregated into a spend ledger for months.",
+      "VPS ATS (191.252.210.60:8105/8100) unreachable from this workstation during Phase 0 (timeout) — could not pull GET /stats.",
+      "Ecosystem policy FREE_FIRST + current .env PROXY_USE_OLLAMA=false and Groq-first fallback imply most interactive traffic is intended to be free/local via EDITH, not billed Claude/GPT through ATS."
+    ],
+    "instrumentation_required": {
+      "fields": [
+        "provider",
+        "model",
+        "tokens_in",
+        "tokens_out",
+        "billed_cost_usd",
+        "trace_id",
+        "sensitivity"
+      ],
+      "note": "Per Phase 0 constraint (no production code this phase), instrumentation is specified here for Phase 1+/EDITH ownership of routing. ATS should stop owning billed spend once routing authority is removed."
+    },
+    "conclusion_preview": "COST ARGUMENT IS UNVERIFIED AND LIKELY WEAK under FREE_FIRST. Cannot claim dollar savings without billed telemetry."
+  },
+  "compress_latency_in_process": {
+    "500": {
+      "n_runs": 7,
+      "p50_ms": 0.59,
+      "p95_ms": 1.32,
+      "mean_ms": 1.05,
+      "tokens_in": 500
+    },
+    "2000": {
+      "n_runs": 7,
+      "p50_ms": 2.59,
+      "p95_ms": 4.93,
+      "mean_ms": 5.14,
+      "tokens_in": 2000
+    },
+    "8000": {
+      "n_runs": 7,
+      "p50_ms": 7.63,
+      "p95_ms": 10.28,
+      "mean_ms": 8.2,
+      "tokens_in": 8000
+    },
+    "16000": {
+      "n_runs": 7,
+      "p50_ms": 24.01,
+      "p95_ms": 32.27,
+      "mean_ms": 28.7,
+      "tokens_in": 16000
+    }
+  },
+  "ats_http_rtt": {
+    "status": "unavailable",
+    "url": "http://191.252.210.60:8105",
+    "error": "All connection attempts failed",
+    "fallback": "in_process_latency used as lower bound (no network hop)"
+  },
+  "ollama_prefill": {
+    "status": "unavailable",
+    "error": "All connection attempts failed",
+    "url": "http://127.0.0.1:11434",
+    "note": "Re-run with OLLAMA_BASE_URL pointing to a live instance."
+  },
+  "breakeven": {
+    "status": "insufficient_data",
+    "compress_p95_ms_ref": 4.93,
+    "note": "Without Ollama prefill curve, breakeven cannot be measured. Hypothesis for EDITH: bypass compression below ~2k–4k tokens for local models unless measured otherwise.",
+    "provisional_bypass_threshold_tokens": 2000
+  },
+  "quality": {
+    "n_cases": 25,
+    "n_perceptible_risk": 0,
+    "pct_perceptible_risk": 0.0,
+    "mean_ratio": 0.4245,
+    "mean_jaccard": 0.8354,
+    "cases": [
+      {
+        "id": "case_00",
+        "kind": "chat",
+        "tokens_before": 249,
+        "tokens_after": 52,
+        "ratio": 0.2088,
+        "latency_ms": 11.82,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_01",
+        "kind": "code",
+        "tokens_before": 268,
+        "tokens_after": 44,
+        "ratio": 0.1642,
+        "latency_ms": 5.04,
+        "token_jaccard": 0.42,
+        "loss_proxy": 0.58,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_02",
+        "kind": "finance",
+        "tokens_before": 1147,
+        "tokens_after": 1147,
+        "ratio": 1.0,
+        "latency_ms": 8.48,
+        "token_jaccard": 0.9692,
+        "loss_proxy": 0.0308,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_03",
+        "kind": "logs",
+        "tokens_before": 742,
+        "tokens_after": 93,
+        "ratio": 0.1253,
+        "latency_ms": 1.92,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_04",
+        "kind": "mixed",
+        "tokens_before": 1009,
+        "tokens_after": 842,
+        "ratio": 0.8345,
+        "latency_ms": 4.46,
+        "token_jaccard": 0.8938,
+        "loss_proxy": 0.1062,
+        "must_preserve_ok": true,
+        "quality_violations": [
+          "restored_critical_instruction:index_1"
+        ],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_05",
+        "kind": "chat",
+        "tokens_before": 389,
+        "tokens_after": 56,
+        "ratio": 0.144,
+        "latency_ms": 7.39,
+        "token_jaccard": 0.8667,
+        "loss_proxy": 0.1333,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_06",
+        "kind": "code",
+        "tokens_before": 391,
+        "tokens_after": 44,
+        "ratio": 0.1125,
+        "latency_ms": 2.96,
+        "token_jaccard": 0.42,
+        "loss_proxy": 0.58,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_07",
+        "kind": "finance",
+        "tokens_before": 1687,
+        "tokens_after": 1687,
+        "ratio": 1.0,
+        "latency_ms": 11.1,
+        "token_jaccard": 0.9692,
+        "loss_proxy": 0.0308,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_08",
+        "kind": "logs",
+        "tokens_before": 1462,
+        "tokens_after": 93,
+        "ratio": 0.0636,
+        "latency_ms": 2.84,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_09",
+        "kind": "mixed",
+        "tokens_before": 1009,
+        "tokens_after": 842,
+        "ratio": 0.8345,
+        "latency_ms": 6.37,
+        "token_jaccard": 0.8947,
+        "loss_proxy": 0.1053,
+        "must_preserve_ok": true,
+        "quality_violations": [
+          "restored_critical_instruction:index_1"
+        ],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_10",
+        "kind": "chat",
+        "tokens_before": 529,
+        "tokens_after": 56,
+        "ratio": 0.1059,
+        "latency_ms": 3.84,
+        "token_jaccard": 0.8667,
+        "loss_proxy": 0.1333,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_11",
+        "kind": "code",
+        "tokens_before": 473,
+        "tokens_after": 44,
+        "ratio": 0.093,
+        "latency_ms": 6.68,
+        "token_jaccard": 0.42,
+        "loss_proxy": 0.58,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_12",
+        "kind": "finance",
+        "tokens_before": 2227,
+        "tokens_after": 2227,
+        "ratio": 1.0,
+        "latency_ms": 10.91,
+        "token_jaccard": 0.9692,
+        "loss_proxy": 0.0308,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_13",
+        "kind": "logs",
+        "tokens_before": 1822,
+        "tokens_after": 93,
+        "ratio": 0.051,
+        "latency_ms": 4.84,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_14",
+        "kind": "mixed",
+        "tokens_before": 1009,
+        "tokens_after": 842,
+        "ratio": 0.8345,
+        "latency_ms": 2.81,
+        "token_jaccard": 0.8947,
+        "loss_proxy": 0.1053,
+        "must_preserve_ok": true,
+        "quality_violations": [
+          "restored_critical_instruction:index_1"
+        ],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_15",
+        "kind": "chat",
+        "tokens_before": 669,
+        "tokens_after": 56,
+        "ratio": 0.0837,
+        "latency_ms": 5.14,
+        "token_jaccard": 0.8667,
+        "loss_proxy": 0.1333,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_16",
+        "kind": "code",
+        "tokens_before": 596,
+        "tokens_after": 44,
+        "ratio": 0.0738,
+        "latency_ms": 3.18,
+        "token_jaccard": 0.42,
+        "loss_proxy": 0.58,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_17",
+        "kind": "finance",
+        "tokens_before": 2767,
+        "tokens_after": 2767,
+        "ratio": 1.0,
+        "latency_ms": 6.43,
+        "token_jaccard": 0.9692,
+        "loss_proxy": 0.0308,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_18",
+        "kind": "logs",
+        "tokens_before": 2182,
+        "tokens_after": 93,
+        "ratio": 0.0426,
+        "latency_ms": 2.5,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_19",
+        "kind": "mixed",
+        "tokens_before": 1009,
+        "tokens_after": 842,
+        "ratio": 0.8345,
+        "latency_ms": 3.66,
+        "token_jaccard": 0.8947,
+        "loss_proxy": 0.1053,
+        "must_preserve_ok": true,
+        "quality_violations": [
+          "restored_critical_instruction:index_1"
+        ],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_20",
+        "kind": "chat",
+        "tokens_before": 809,
+        "tokens_after": 56,
+        "ratio": 0.0692,
+        "latency_ms": 6.01,
+        "token_jaccard": 0.8667,
+        "loss_proxy": 0.1333,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_21",
+        "kind": "code",
+        "tokens_before": 678,
+        "tokens_after": 44,
+        "ratio": 0.0649,
+        "latency_ms": 1.91,
+        "token_jaccard": 0.42,
+        "loss_proxy": 0.58,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_22",
+        "kind": "finance",
+        "tokens_before": 3307,
+        "tokens_after": 3307,
+        "ratio": 1.0,
+        "latency_ms": 12.4,
+        "token_jaccard": 0.9692,
+        "loss_proxy": 0.0308,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_23",
+        "kind": "logs",
+        "tokens_before": 2542,
+        "tokens_after": 93,
+        "ratio": 0.0366,
+        "latency_ms": 1.46,
+        "token_jaccard": 1.0,
+        "loss_proxy": 0.0,
+        "must_preserve_ok": true,
+        "quality_violations": [],
+        "perceptible_risk": false
+      },
+      {
+        "id": "case_24",
+        "kind": "mixed",
+        "tokens_before": 1009,
+        "tokens_after": 842,
+        "ratio": 0.8345,
+        "latency_ms": 4.31,
+        "token_jaccard": 0.8947,
+        "loss_proxy": 0.1053,
+        "must_preserve_ok": true,
+        "quality_violations": [
+          "restored_critical_instruction:index_1"
+        ],
+        "perceptible_risk": false
+      }
+    ],
+    "method": "In-process CompressionService balanced use_ollama=false; quality via token Jaccard + must_preserve substring + QualityGuard. NOT LLM-as-judge (Ollama/providers unavailable from this workstation)."
+  }
+}
