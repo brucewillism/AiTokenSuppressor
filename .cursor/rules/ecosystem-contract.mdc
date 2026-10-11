@@ -1,5 +1,5 @@
 ---
-description: Contrato compartilhado do ecossistema (JARVIS/EDITH/ConsumoEsperto/ATS) — ler antes de qualquer implementação
+description: Contrato compartilhado do ecossistema v1.2 (JARVIS/EDITH/ConsumoEsperto/ATS/Arman) — ler antes de qualquer implementação
 alwaysApply: true
 ---
 
@@ -7,14 +7,15 @@ alwaysApply: true
 
 Antes de **qualquer implementação, endpoint, integração, header, erro, métrica ou mudança de API** neste repositório (`ai-token-suppressor` / `ats`):
 
-1. Leia e respeite **`00-CONTRATO-COMPARTILHADO.md`** (cópia canônica em `docs/ECOSYSTEM_CONTRACT.md`).
-2. O contrato é **v1 CONGELADO**. Não altere sozinho neste repo. Mudança exige bump e sync nos quatro projetos: `jarvis`, `edith`, `consumo-esperto`, `ats`.
-3. Em saltos entre serviços, propague o **envelope** (`X-Eco-*`): `Trace-Id`, `Span-Id`, `Parent-Span-Id`, `User-Id`, `App-Origin`, `App-Current`, `Mode`, `Deadline`, `Sensitivity`.
-4. Respeite modos (`INTERACTIVE` / `BALANCED` / `DEEP`), paths (`INSTANT` / `FAST` / `DEEP`), códigos de erro canônicos e métricas `t_*` / `tokens_*` / `ats_mode`.
-5. ATS aparece no plano como estágio `ats?` e `ats: BYPASS | ENABLED`. Emita `t_ats_ms`, `tokens_in_original`, `tokens_in_final`, `compression_ratio`, `ats_mode`.
-6. Ollama no ecossistema é acessado **apenas pela E.D.I.T.H.** — o ATS não abre Ollama “por conta própria” no desenho do ecossistema compartilhado (exceto uso legado local documentado).
-7. Postgres: banco `ats_db` com role próprio; Redis prefixo `ats:`. Sem ler bancos de outros serviços.
-8. Auth entre serviços: HMAC (`X-Eco-Signature`, `X-Eco-Timestamp`, `X-Eco-Nonce`) + scopes; default deny.
-9. Health deve expor `contract_version: "1"`.
+1. Leia e respeite **`docs/ECOSYSTEM_CONTRACT.md`** (v1.2). Esta regra só aponta o contrato; não o substitui. `00-CONTRATO-COMPARTILHADO.md` é o patch antigo v1→v1.1, não a fonte.
+2. O contrato é **v1.2 CONGELADO**. Não altere sozinho neste repo. Mudança exige bump e sync nos cinco projetos: `jarvis`, `edith`, `consumo-esperto`, `ats`, `arman`.
+3. Em saltos entre serviços, propague o **envelope** (`X-Eco-*`): `Trace-Id`, `Span-Id`, `Parent-Span-Id`, `User-Id`, `App-Origin`, `App-Current`, `Conversation-Id`, `Task-Id`, `Tool-Call-Id`, `Mode`, `Deadline-First-Token`, `Deadline-Total`, `Sensitivity`. Autenticação (§9), no mesmo salto: `Key-Id`, `Timestamp`, `Nonce`, `Signature`.
+4. Respeite modos (`INTERACTIVE` / `BALANCED` / `DEEP` / `STREAM`), paths (`INSTANT` / `FAST` / `DEEP`), códigos de erro canônicos e métricas `t_*` / `tokens_*` / `ats_mode`. Sensibilidade só sobe: `PUBLIC < INTERNAL < PERSONAL < FINANCIAL < HEALTH < CLIENT_SOURCE`. Valor desconhecido, ou ausente fora de ponte registrada, trata como `CLIENT_SOURCE` (§1 regra 6, §8).
+5. ATS aparece no plano como estágio `ats?` e `ats: BYPASS | ENABLED`. O modo canônico é a biblioteca `ats_core` em processo na E.D.I.T.H. (§11.2). Emita `t_ats_ms`, `tokens_in_original`, `tokens_in_final`, `compression_ratio`, `ats_mode`.
+6. Ollama no ecossistema é acessada **apenas pela E.D.I.T.H.** A biblioteca não abre Ollama, banco, Redis nem provedor; usa ports do hospedeiro (§11.2).
+7. **Fail closed (§8.3):** com `PERSONAL`, `FINANCIAL`, `HEALTH` ou `CLIENT_SOURCE`, se a E.D.I.T.H. estiver indisponível, é proibido cair para provedor de nuvem. Responda `DEGRADED` (`degraded_reason: SENSITIVE_ROUTING_UNAVAILABLE`) ou `UPSTREAM_UNAVAILABLE`, com `fail_closed: true`. Chamada direta de nuvem com dado `PERSONAL` ou acima é proibida (§8.2). No modo serviço, o proxy `/v1/*` recusa `PERSONAL` ou acima para nuvem (§11.2).
+8. Ponte de modo serviço (§11.2, §13): Postgres `ats_db` com role próprio e Redis prefixo `ats:` com senha, até **2027-03-31**. Sem ler bancos de outros serviços. No modo biblioteca, cache no Redis do hospedeiro com prefixo `edith:ats:`. A dívida está em `docs/COMPAT_DEBT.md`. As outras pontes da §13 (`X-Edith-*`, Bearer `edith_*`, HMAC do SDK do Arman, `X-Eco-Deadline` de v1, envelope sintetizado) não se aplicam a este repo.
+9. Auth entre serviços: HMAC `ECO-HMAC-SHA256-V1` (§9) — `X-Eco-Key-Id`, `X-Eco-Timestamp`, `X-Eco-Nonce`, `X-Eco-Signature`, string canônica e vetores do §9.7. Escopos com default deny (§9.6). `GET /health` é a exceção sem assinatura.
+10. Health só declara `contract_version: "1.2"` depois de passar nos vetores do §9.7 e cumprir o §8.3 (§12). Não antecipe essa declaração.
 
 Se a tarefa conflitar com o contrato, **pare e alinhe** — não invente headers, códigos de erro ou paths extras.

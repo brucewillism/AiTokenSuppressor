@@ -26,4 +26,4 @@ Conferidas no código em 11/10/2026. Não entram na tabela acima.
 
 - `docs/ECOSYSTEM_CONTRACT.md` é a cópia canônica, substituída por completo pela v1.2.
 - `00-CONTRATO-COMPARTILHADO.md` (raiz) é o patch v1→v1.1, não uma segunda cópia integral. Permanece no lugar; a instrução desta publicação foi apontar cópias extras em vez de apagá-las.
-- `.cursor/rules/ecosystem-contract.mdc` é um lembrete operacional para agentes. Ainda descreve a v1 e `contract_version: "1"`. Não foi alterado: o serviço só declara `"1.2"` depois de passar nos vetores do §9.7 (§12).
+- `.cursor/rules/ecosystem-contract.mdc` é o lembrete operacional para agentes. Aponta para `docs/ECOSYSTEM_CONTRACT.md` (v1.2) e não substitui o contrato. O serviço só declara `contract_version: "1.2"` depois de passar nos vetores do §9.7 e cumprir o §8.3 (§12).
