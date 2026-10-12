@@ -1,0 +1,340 @@
+# Produção na VPS compartilhada.
+# Toda porta publicada fica em 127.0.0.1. Acesso remoto só por túnel SSH.
+# O .env não entra no git. O compose interpola variáveis a partir dele.
+
+name: ai-token-suppressor
+
+services:
+
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: ats-redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      REDISCLI_AUTH: "${REDIS_PASSWORD:?REDIS_PASSWORD obrigatorio}"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --requirepass
+      - "${REDIS_PASSWORD:?REDIS_PASSWORD obrigatorio}"
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+    ports:
+      - "127.0.0.1:8106:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - ai-token-suppressor
+
+  api:
+    image: ai-token-suppressor-api:${GIT_SHA:-dev}
+    pull_policy: build
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ats-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL obrigatorio}"
+      REDIS_URL: "redis://:${REDIS_PASSWORD:?REDIS_PASSWORD obrigatorio}@redis:6379/0"
+      CELERY_BROKER_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://:${REDIS_PASSWORD}@redis:6379/2"
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY obrigatorio}"
+      API_KEY: "${API_KEY:?API_KEY obrigatorio}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?JWT_SECRET_KEY obrigatorio}"
+      EDITH_BASE_URL: "${EDITH_BASE_URL:-}"
+      JARVIS_BASE_URL: "${JARVIS_BASE_URL:-}"
+      CONSUMO_ESPERTO_BASE_URL: "${CONSUMO_ESPERTO_BASE_URL:-}"
+      ATS_BASE_URL: "${ATS_BASE_URL:-http://127.0.0.1:8105}"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    ports:
+      - "127.0.0.1:8105:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - ai-token-suppressor
+
+  celery-worker:
+    profiles:
+      - workers
+    image: ai-token-suppressor-api:${GIT_SHA:-dev}
+    pull_policy: build
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ats-celery-worker
+    restart: unless-stopped
+    # A imagem da API entra direto no uvicorn. O worker troca o entrypoint.
+    entrypoint: ["celery"]
+    command:
+      - -A
+      - app.workers.celery_app
+      - worker
+      - --loglevel=info
+      - --concurrency=2
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL obrigatorio}"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379/0"
+      CELERY_BROKER_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://:${REDIS_PASSWORD}@redis:6379/2"
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY obrigatorio}"
+      API_KEY: "${API_KEY:?API_KEY obrigatorio}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?JWT_SECRET_KEY obrigatorio}"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A app.workers.celery_app inspect ping -t 5 >/dev/null",
+        ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 40s
+    networks:
+      - ai-token-suppressor
+
+  flower:
+    profiles:
+      - workers
+    image: ai-token-suppressor-api:${GIT_SHA:-dev}
+    pull_policy: build
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ats-flower
+    restart: unless-stopped
+    entrypoint: ["celery"]
+    command:
+      - -A
+      - app.workers.celery_app
+      - flower
+      - --port=5556
+    env_file:
+      - .env
+    environment:
+      CELERY_BROKER_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://:${REDIS_PASSWORD}@redis:6379/2"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    ports:
+      - "127.0.0.1:8104:5556"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      celery-worker:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5556/', timeout=5)",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-token-suppressor
+
+  litellm:
+    profiles:
+      - litellm
+    image: ghcr.io/berriai/litellm:${LITELLM_IMAGE_TAG:?LITELLM_IMAGE_TAG obrigatorio}
+    container_name: ats-litellm
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml
+    command: ["--config", "/app/config.yaml", "--port", "4001"]
+    ports:
+      - "127.0.0.1:8101:4001"
+    environment:
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
+      LITELLM_MASTER_KEY: "${LITELLM_MASTER_KEY:-}"
+      OLLAMA_API_BASE: "${OLLAMA_API_BASE:-http://host.docker.internal:11999}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:4001/health/liveliness || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - ai-token-suppressor
+
+  frontend:
+    image: ai-token-suppressor-frontend:${GIT_SHA:-dev}
+    pull_policy: build
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-/api}"
+        VITE_API_KEY: "${VITE_API_KEY:?VITE_API_KEY obrigatorio}"
+        VITE_API_DIRECT_URL: "${VITE_API_DIRECT_URL:-}"
+    container_name: ats-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    ports:
+      - "127.0.0.1:8100:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health/live"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ai-token-suppressor
+
+  prometheus:
+    profiles:
+      - monitoring
+    image: prom/prometheus:v2.54.1
+    container_name: ats-prometheus
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:8102:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9090/-/healthy"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ai-token-suppressor
+
+  grafana:
+    profiles:
+      - monitoring
+    image: grafana/grafana:11.3.0
+    container_name: ats-grafana
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD obrigatorio}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "127.0.0.1:8103:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - ai-token-suppressor
+
+volumes:
+  prometheus_data:
+    name: ai-token-suppressor-prometheus
+  grafana_data:
+    name: ai-token-suppressor-grafana
+  redis_data:
+    name: ai-token-suppressor-redis
+
+networks:
+  ai-token-suppressor:
+    name: ai-token-suppressor
+    driver: bridge
