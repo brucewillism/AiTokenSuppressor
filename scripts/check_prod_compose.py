@@ -82,6 +82,26 @@ def check_source(data: dict) -> None:
         if not expected.startswith("127.0.0.1:"):
             fail(f"{name}: bind fora do loopback")
 
+    postgres = services.get("postgres")
+    if not isinstance(postgres, dict):
+        fail("falta o serviço postgres")
+    if postgres.get("ports"):
+        fail("postgres não publica porta")
+    if postgres.get("networks") != ["ai-token-suppressor"]:
+        fail("postgres fica só na rede ai-token-suppressor")
+    if postgres.get("image") != "pgvector/pgvector:0.8.7-pg16":
+        fail("postgres precisa da imagem pinada pgvector/pgvector:0.8.7-pg16")
+    volumes = data.get("volumes") or {}
+    postgres_volume = volumes.get("postgres_data")
+    if not isinstance(postgres_volume, dict) or postgres_volume.get("name") != "ai-token-suppressor-postgres":
+        fail("o volume postgres_data precisa se chamar ai-token-suppressor-postgres")
+    api_postgres = ((services.get("api") or {}).get("depends_on") or {}).get("postgres")
+    if not isinstance(api_postgres, dict) or api_postgres.get("condition") != "service_healthy":
+        fail("a api precisa depender do postgres healthy")
+    api_db = ((services.get("api") or {}).get("environment") or {}).get("DATABASE_URL", "")
+    if "@postgres:5432/ats_db" not in api_db:
+        fail("DATABASE_URL da api aponta para postgres:5432/ats_db na rede do projeto")
+
 
 def check_rendered(data: dict) -> None:
     def walk(node: object) -> None:

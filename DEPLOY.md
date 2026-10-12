@@ -4,10 +4,11 @@ O AI Token Suppressor sobe só em loopback nesta VPS. Nada deste repositório es
 
 O arquivo usado no servidor é `docker-compose.prod.yml`. O `docker-compose.yml` da raiz permanece para desenvolvimento local e não deve ser o comando de produção.
 
-Stack automática: Redis, API e frontend. Celery, Flower, LiteLLM, Prometheus e Grafana ficam em profiles e não sobem no deploy automático.
+Stack automática: Postgres, Redis, API e frontend. Celery, Flower, LiteLLM, Prometheus e Grafana ficam em profiles e não sobem no deploy automático. Não instale Postgres no host.
 
 | Serviço | Bind no host | Porta do container | Profile |
 |---|---|---|---|
+| postgres | sem porta publicada | 5432, só na rede do projeto | padrão |
 | frontend | `127.0.0.1:8100` | 80 | padrão |
 | api | `127.0.0.1:8105` | 8000 | padrão |
 | redis | `127.0.0.1:8106` | 6379 | padrão |
@@ -69,9 +70,19 @@ chmod 600 .env
 
 O job recusa o deploy se o modo do `.env` não for `600`.
 
-Antes do primeiro `docker compose` de produção, pare uma stack antiga que use os mesmos `container_name` (`ats-api`, `ats-redis`, `ats-frontend`). Dois projetos com o mesmo nome de container não sobem juntos.
+Antes do primeiro `docker compose` de produção, pare uma stack antiga que use os mesmos `container_name` (`ats-api`, `ats-redis`, `ats-frontend`, `ats-postgres`). Dois projetos com o mesmo nome de container não sobem juntos.
 
-Confira, fora do git, que o Postgres deste serviço é o banco `ats_db` com um role que não lê banco de outro serviço. O Redis desta stack usa senha e o prefixo de chaves `ats:` que a aplicação já grava. A rede Docker do projeto se chama `ai-token-suppressor`.
+O Postgres deste serviço é o container `postgres` do `docker-compose.prod.yml`. A imagem pinada é `pgvector/pgvector:0.8.7-pg16` (Postgres 16 com a extensão que o processo habilita na subida com `CREATE EXTENSION vector`). O volume nomeado é `ai-token-suppressor-postgres`. Não há porta publicada: o banco só existe na rede `ai-token-suppressor`. O banco é `ats_db` e o role é `ats`. A instância só contém esse banco. A API espera o healthcheck desse serviço antes de subir.
+
+Exemplo de `DATABASE_URL`. O trecho entre `<` e `>` é o valor de `POSTGRES_PASSWORD`:
+
+```text
+postgresql+asyncpg://ats:<POSTGRES_PASSWORD>@postgres:5432/ats_db
+```
+
+O compose de produção grava essa URL na API e no Celery. O host é o serviço `postgres` e o banco é `ats_db`. `POSTGRES_PASSWORD` segue a mesma regra de `REDIS_PASSWORD`: letras e dígitos, sem `$`, `@`, `:` ou `/`.
+
+O Redis desta stack usa senha e o prefixo de chaves `ats:` que a aplicação já grava. A rede Docker do projeto se chama `ai-token-suppressor`.
 
 O compose de produção monta estas URLs do Redis para a API e para o Celery, a partir de `REDIS_PASSWORD`:
 
@@ -123,6 +134,7 @@ Banco, Redis e fila:
 - `DATABASE_URL`
 - `DATABASE_POOL_SIZE`
 - `DATABASE_MAX_OVERFLOW`
+- `POSTGRES_PASSWORD`
 - `POSTGRES_USER`
 - `REDIS_PASSWORD`
 - `REDIS_URL`
@@ -192,7 +204,7 @@ Frontend, LiteLLM, Grafana e ecossistema:
 
 `GIT_SHA` não entra no `.env`. O workflow exporta o SHA na hora do `docker compose`, e a imagem da API e a do frontend recebem essa tag.
 
-O compose exige, para interpolar, mesmo com os profiles opcionais desligados: `REDIS_PASSWORD`, `DATABASE_URL`, `SECRET_KEY`, `API_KEY`, `JWT_SECRET_KEY`, `VITE_API_KEY`, `LITELLM_IMAGE_TAG`, `GRAFANA_ADMIN_PASSWORD`.
+O compose exige, para interpolar, mesmo com os profiles opcionais desligados: `REDIS_PASSWORD`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `API_KEY`, `JWT_SECRET_KEY`, `VITE_API_KEY`, `LITELLM_IMAGE_TAG`, `GRAFANA_ADMIN_PASSWORD`.
 
 `APP_NAME` com espaço precisa de aspas no `.env`. Sem aspas o Compose recusa a linha.
 
@@ -245,7 +257,7 @@ api.dominio.exemplo {
 1. Usuário `deploy` no grupo `docker`, com `docker` sem sudo.
 2. Clone em `/home/bruce/apps/AiTokenSuppressor`, remote SSH e deploy key de leitura.
 3. `.env` com `chmod 600`, dono `deploy`, e os nomes da lista acima preenchidos.
-4. Postgres `ats_db` no loopback do host, role exclusivo.
+4. `POSTGRES_PASSWORD` no `.env`. O banco `ats_db` sobe no compose, sem Postgres instalado no host.
 5. Secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` e, se a porta não for 22, `VPS_PORT`.
 6. `curl` instalado na VPS. O job chama `http://127.0.0.1:8105/health` e `http://127.0.0.1:8100/health/live`.
 7. Workflow `CI` verde na `main` depois do merge. Em seguida, um `workflow_dispatch` do SHA que deve subir.

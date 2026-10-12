@@ -6,6 +6,31 @@ name: ai-token-suppressor
 
 services:
 
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg16
+    container_name: ats-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ats
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatorio}"
+      POSTGRES_DB: ats_db
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ats -d ats_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - ai-token-suppressor
+
   redis:
     image: redis:7.4.2-alpine
     container_name: ats-redis
@@ -53,7 +78,7 @@ services:
       - .env
     environment:
       APP_ENV: production
-      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL obrigatorio}"
+      DATABASE_URL: "postgresql+asyncpg://ats:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatorio}@postgres:5432/ats_db"
       REDIS_URL: "redis://:${REDIS_PASSWORD:?REDIS_PASSWORD obrigatorio}@redis:6379/0"
       CELERY_BROKER_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://:${REDIS_PASSWORD}@redis:6379/2"
@@ -73,6 +98,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -112,7 +139,7 @@ services:
       - .env
     environment:
       APP_ENV: production
-      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL obrigatorio}"
+      DATABASE_URL: "postgresql+asyncpg://ats:${POSTGRES_PASSWORD}@postgres:5432/ats_db"
       REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379/0"
       CELERY_BROKER_URL: "redis://:${REDIS_PASSWORD}@redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://:${REDIS_PASSWORD}@redis:6379/2"
@@ -126,6 +153,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -333,6 +362,8 @@ volumes:
     name: ai-token-suppressor-grafana
   redis_data:
     name: ai-token-suppressor-redis
+  postgres_data:
+    name: ai-token-suppressor-postgres
 
 networks:
   ai-token-suppressor:

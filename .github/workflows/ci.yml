@@ -31,7 +31,8 @@ jobs:
       - name: Renderizar e validar o compose
         env:
           REDIS_PASSWORD: ci-validation-only
-          DATABASE_URL: postgresql+asyncpg://ats:ci@127.0.0.1:5432/ats_db
+          POSTGRES_PASSWORD: ci-validation-only
+          DATABASE_URL: postgresql+asyncpg://ats:ci-validation-only@postgres:5432/ats_db
           SECRET_KEY: ci-validation-secret-key-32ch
           API_KEY: ci-validation-api-key
           JWT_SECRET_KEY: ci-validation-jwt-secret-32ch
