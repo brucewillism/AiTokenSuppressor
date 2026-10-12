@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    name: Validar compose de produção
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Garantir PyYAML
+        run: |
+          set -euo pipefail
+          if ! python3 -c "import yaml" 2>/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y python3-yaml
+          fi
+
+      - name: Validar o arquivo fonte
+        run: python3 scripts/check_prod_compose.py
+
+      - name: Renderizar e validar o compose
+        env:
+          REDIS_PASSWORD: ci-validation-only
+          DATABASE_URL: postgresql+asyncpg://ats:ci@127.0.0.1:5432/ats_db
+          SECRET_KEY: ci-validation-secret-key-32ch
+          API_KEY: ci-validation-api-key
+          JWT_SECRET_KEY: ci-validation-jwt-secret-32ch
+          VITE_API_KEY: ci-validation-vite-key
+          LITELLM_IMAGE_TAG: v0.0.0-ci
+          GRAFANA_ADMIN_PASSWORD: ci-validation-only
+          GIT_SHA: ci
+        run: |
+          set -euo pipefail
+          touch .env
+          docker compose -f docker-compose.prod.yml \
+            --profile workers \
+            --profile monitoring \
+            --profile litellm \
+            config >/tmp/ats-prod.rendered.yml
+          python3 scripts/check_prod_compose.py --rendered /tmp/ats-prod.rendered.yml
