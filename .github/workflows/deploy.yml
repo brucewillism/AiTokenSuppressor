@@ -21,6 +21,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  pytest:
+    name: Testar ats_core antes do deploy
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Resolver SHA
+        id: rev
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REF: ${{ inputs.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            REF="${INPUT_REF:-}"
+            if [ -z "$REF" ]; then
+              REF="$DISPATCH_SHA"
+            fi
+          else
+            REF="$RUN_SHA"
+          fi
+          if ! printf '%s' "$REF" | grep -Eq '^[0-9a-fA-F]{40}$'; then
+            echo "O ref precisa ser um SHA de 40 caracteres hexadecimais."
+            exit 1
+          fi
+          echo "sha=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ steps.rev.outputs.sha }}
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar e rodar pytest
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "./packages/ats_core[test]"
+          python -m pytest packages/ats_core/tests -q
+
   recusar-ci-vermelho:
     name: Recusar CI vermelho na main
     if: >-
@@ -37,11 +87,14 @@ jobs:
 
   deploy:
     name: Deploy na VPS
+    needs: pytest
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'main')
+      always() &&
+      needs.pytest.result == 'success' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:

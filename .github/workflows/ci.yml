@@ -49,3 +49,23 @@ jobs:
             --profile litellm \
             config >/tmp/ats-prod.rendered.yml
           python3 scripts/check_prod_compose.py --rendered /tmp/ats-prod.rendered.yml
+
+  pytest:
+    name: Testar ats_core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar e rodar pytest
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "./packages/ats_core[test]"
+          python -m pytest packages/ats_core/tests -q

@@ -217,6 +217,34 @@ cd backend
 pytest -v
 ```
 
+O núcleo puro tem a suíte própria, sem rede:
+
+```bash
+pip install -e "./packages/ats_core[test]"
+pytest packages/ats_core/tests -q
+```
+
+## Biblioteca `ats_core`
+
+O modo canônico do contrato v1.2 é a biblioteca em processo na E.D.I.T.H. (`TokenSuppressor().compress(...)`). O pacote versionado fica em `packages/ats_core` (versão **0.1.0**, `ats_core.__version__`). Ele não abre banco, Redis, Ollama, LiteLLM nem provedor. A API deste repositório importa esse código; Ollama continua só no serviço, injetado como port.
+
+Para a E.D.I.T.H. fixar um commit:
+
+```bash
+pip install 'ats_core @ git+https://github.com/brucewillism/AiTokenSuppressor@<sha>#subdirectory=packages/ats_core'
+```
+
+`<sha>` é o commit completo de 40 caracteres. Não use a branch `main` como pin.
+
+A tag `v0.1.0` marca esse pacote. Crie e publique a tag a partir do commit que contém `packages/ats_core` em 0.1.0:
+
+```bash
+git tag -a v0.1.0 <sha> -m "ats_core 0.1.0"
+git push origin v0.1.0
+```
+
+A tag não substitui o pin por SHA na URL do `pip`.
+
 ## Setup Ollama (VPS / Bare Metal)
 
 ```bash
@@ -306,6 +334,8 @@ async def optimize_before_llm(messages: list[dict]) -> list[dict]:
 
 ```
 AiTokenSuppressor/
+├── packages/
+│   └── ats_core/      # núcleo puro, pacote instalável
 ├── backend/
 │   ├── app/
 │   │   ├── api/           # Routes e dependencies

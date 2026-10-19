@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ats_core"
+version = "0.1.0"
+description = "Núcleo puro de compressão de tokens do AI Token Suppressor"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "tiktoken==0.8.0",
+    "orjson==3.10.12",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.3.4"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ats_core*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

@@ -1,9 +1,10 @@
 # ADR-005 — ATS como biblioteca dentro da E.D.I.T.H.
 
-**Status:** Proposto (Fase 1.1)  
+**Status:** Aceito — pacote `ats_core` 0.1.0 extraído (etapa 1). Etapas 2–6 seguem abertas.  
 **Data:** 2026-09-07  
+**Atualização:** 2026-10-19  
 **Decisão A (JUSTIFICATION):** biblioteca — FECHADA  
-**Não implementa código nesta fase.**
+**Contrato:** v1.2. O nome do pacote é `ats_core` (`TokenSuppressor().compress(...)`, §11.2).
 
 ---
 
@@ -52,7 +53,7 @@ class CompressionResult(TypedDict):
 
 | Item | Proposta |
 |------|----------|
-| Nome | `ats_compress` (ou `edith.ats`) |
+| Nome | `ats_core` (contrato v1.2). Caminho no repositório: `packages/ats_core` |
 | LOC alvo | **~800–1500** linhas |
 | Inclui | compression, specialized, dedup, quality_guard, token_service, content_detection leve, relevance leve, context trim |
 | Exclui | FastAPI routes, LiteLLM, proxies, Celery, React, Grafana, memory/RAG/graph, Ollama client como dependência obrigatória |
@@ -108,7 +109,7 @@ Ao rodar in-process:
 
 | Etapa | Ação |
 |-------|------|
-| 1 | Extrair pacote no monorepo ATS (`packages/ats_compress`) mantendo FastAPI chamando a lib |
+| 1 | Extrair pacote no monorepo ATS (`packages/ats_core`) mantendo FastAPI chamando a lib. Feito em 0.1.0: a API importa `ats_core` e injeta o Ollama local como port. |
 | 2 | EDITH adiciona dependência e path `ats: ENABLED` chama lib in-process |
 | 3 | ConsumoEsperto/Claude Code deixam de apontar para proxy ATS; passam pela EDITH |
 | 4 | Marcar pontes legacy (`envelope_synthesized`, `auth_scheme: legacy`) com data em `COMPAT_DEBT.md` |
@@ -139,8 +140,8 @@ Durante a transição, o serviço antigo pode permanecer como **wrapper fino** s
 
 ## Checklist de aceite do ADR (implementação futura)
 
-- [ ] `compress` pura + testes `must_preserve`
-- [ ] Teste isolamento cache por `user_id` (lado EDITH + chave)
-- [ ] Zero import litellm/openai/anthropic SDK na lib
-- [ ] Zero escrita de content FINANCIAL/PERSONAL em log da lib
-- [ ] Métricas canônicas retornadas no `CompressionResult` para a EDITH emitir
+- [x] `compress` pura (`TokenSuppressor.compress`) + testes de preservação do system prompt e de instruções críticas já cobertas pelo quality guard. O parâmetro `must_preserve` por id de bloco deste esboço não entrou no 0.1.0: a API pública continua a pipeline que o serviço já executava.
+- [ ] Teste isolamento cache por `user_id` (lado E.D.I.T.H. + chave). `compress` não lê nem escreve cache.
+- [x] Zero import litellm/openai/anthropic SDK na lib
+- [x] Zero escrita de conteúdo em log da lib (só o nome do evento)
+- [x] Métricas canônicas retornadas no `CompressionResult` (`tokens_in_original`, `tokens_in_final`, `compression_ratio`, `t_ats_ms`, `ats_mode`)
