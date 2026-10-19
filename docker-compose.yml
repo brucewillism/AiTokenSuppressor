@@ -28,8 +28,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-api
     restart: unless-stopped
     env_file:
@@ -92,8 +92,8 @@ services:
     profiles:
       - workers
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-celery-worker
     restart: unless-stopped
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
@@ -117,8 +117,8 @@ services:
     profiles:
       - workers
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-flower
     command: celery -A app.workers.celery_app flower --port=5556
     env_file:

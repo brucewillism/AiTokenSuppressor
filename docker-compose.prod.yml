@@ -70,8 +70,8 @@ services:
     image: ai-token-suppressor-api:${GIT_SHA:-dev}
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-api
     restart: unless-stopped
     env_file:
@@ -123,8 +123,8 @@ services:
     image: ai-token-suppressor-api:${GIT_SHA:-dev}
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-celery-worker
     restart: unless-stopped
     # A imagem da API entra direto no uvicorn. O worker troca o entrypoint.
@@ -176,8 +176,8 @@ services:
     image: ai-token-suppressor-api:${GIT_SHA:-dev}
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ats-flower
     restart: unless-stopped
     entrypoint: ["celery"]

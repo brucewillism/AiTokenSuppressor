@@ -16,8 +16,10 @@ RUN set -eux; \
     done; \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+COPY packages/ats_core /tmp/ats_core
+RUN pip install --no-cache-dir --prefer-binary /tmp/ats_core
 
 # Estágio 2: imagem final enxuta (sem gcc; healthcheck via Python)
 FROM python:3.12-slim-bookworm
@@ -40,7 +42,7 @@ RUN set -eux; \
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY . .
+COPY backend/ .
 
 RUN chmod +x docker-entrypoint.sh
 
