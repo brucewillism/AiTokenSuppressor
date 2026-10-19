@@ -1,11 +1,12 @@
 """Motor de compressão. Não abre rede, banco, Redis, Ollama nem provedor."""
 
+import copy
 import logging
 import re
 from typing import Any
 
 from ats_core.dedup import DeduplicationService
-from ats_core.quality_guard import QualityGuardService
+from ats_core.quality_guard import QualityGuardService, _last_user_index
 from ats_core.relevance import RelevanceService
 from ats_core.specialized import SpecializedCompressionService
 from ats_core.summary import HierarchicalSummaryService
@@ -174,14 +175,22 @@ class CompressionService:
             max_chars = int(len(text) * target_ratio)
             return truncate_smart(text, max_chars), ["semantic_reduce_truncation"]
 
-    async def deduplicate_content(self, messages: list[dict]) -> tuple[list[dict], list[str]]:
+    async def deduplicate_content(
+        self,
+        messages: list[dict],
+        *,
+        preserve: dict | None = None,
+    ) -> tuple[list[dict], list[str]]:
         all_ops: list[str] = []
 
-        deduped, msg_ops = self.dedup_service.deduplicate_messages(messages)
+        deduped, msg_ops = self.dedup_service.deduplicate_messages(messages, preserve=preserve)
         all_ops.extend(msg_ops)
 
         result: list[dict] = []
         for msg in deduped:
+            if msg is preserve:
+                result.append(msg)
+                continue
             content = msg.get("content", "")
             if isinstance(content, str) and len(content) > 100:
                 deduped_content, content_ops = self.dedup_service.deduplicate_content(content)
@@ -205,9 +214,20 @@ class CompressionService:
         operations: list[str] = []
 
         msg_dicts = [_message_dict(m) for m in messages]
+        pin_index = _last_user_index(msg_dicts)
+        pinned = msg_dicts[pin_index] if pin_index is not None else None
+        snapshot = copy.deepcopy(pinned) if pinned is not None else None
+        was_last = pin_index is not None and pin_index == len(msg_dicts) - 1
 
-        msg_dicts, dedup_ops = await self.deduplicate_content(msg_dicts)
+        msg_dicts, dedup_ops = await self.deduplicate_content(msg_dicts, preserve=pinned)
         operations.extend(dedup_ops)
+        if pinned is not None and not any(message is pinned for message in msg_dicts):
+            if was_last:
+                msg_dicts.append(pinned)
+            else:
+                msg_dicts.insert(min(pin_index or 0, len(msg_dicts)), pinned)
+        if pinned is not None and snapshot is not None:
+            _restore_snapshot(pinned, snapshot)
 
         protected, compressible = self.quality_guard.protect_during_compression(msg_dicts)
         if protected:
@@ -215,11 +235,18 @@ class CompressionService:
 
         if ollama_enabled:
             keep_recent = 8 if strategy == CompressionStrategy.CHAT_FOCUSED else 5
-            compressible, sum_ops = await self.summarize_history(compressible, keep_recent=keep_recent)
-            operations.extend(sum_ops)
+            compressible = await self._summarize_keeping_final_user(
+                compressible,
+                pinned,
+                keep_recent=keep_recent,
+                operations=operations,
+            )
 
         processed: list[dict] = list(protected)
         for msg in compressible:
+            if msg is pinned:
+                processed.append(msg)
+                continue
             content = msg.get("content", "")
             if not isinstance(content, str):
                 processed.append(msg)
@@ -276,7 +303,12 @@ class CompressionService:
             processed.append({**msg, "content": result_content})
 
         if max_tokens:
-            processed = self._enforce_token_limit(processed, max_tokens, operations)
+            processed = self._enforce_token_limit(
+                processed, max_tokens, operations, preserve=pinned
+            )
+
+        if pinned is not None and snapshot is not None:
+            _restore_snapshot(pinned, snapshot)
 
         processed, quality_report = self.quality_guard.merge_with_compressed(msg_dicts, processed)
         if quality_report.violations:
@@ -284,8 +316,47 @@ class CompressionService:
 
         return processed, operations
 
+    async def _summarize_keeping_final_user(
+        self,
+        compressible: list[dict],
+        pinned: dict | None,
+        *,
+        keep_recent: int,
+        operations: list[str],
+    ) -> list[dict]:
+        """Sumariza o miolo antigo sem engolir o último turno do usuário."""
+        if not _pinned_would_be_summarized(compressible, pinned, keep_recent):
+            summarized, sum_ops = await self.summarize_history(
+                compressible, keep_recent=keep_recent
+            )
+            operations.extend(sum_ops)
+            return summarized
+
+        pin_at = 0
+        body: list[dict] = []
+        for index, message in enumerate(compressible):
+            if message is pinned:
+                pin_at = index
+                continue
+            body.append(message)
+
+        summarized, sum_ops = await self.summarize_history(body, keep_recent=keep_recent)
+        operations.extend(sum_ops)
+        if any(op.startswith("hierarchical_summary_") for op in sum_ops):
+            insert_at = next(
+                (index for index, message in enumerate(summarized) if message.get("role") != "system"),
+                len(summarized),
+            )
+            return summarized[:insert_at] + [pinned] + summarized[insert_at:]
+        pin_at = min(pin_at, len(summarized))
+        return summarized[:pin_at] + [pinned] + summarized[pin_at:]
+
     def _enforce_token_limit(
-        self, messages: list[dict], max_tokens: int, operations: list[str]
+        self,
+        messages: list[dict],
+        max_tokens: int,
+        operations: list[str],
+        preserve: dict | None = None,
     ) -> list[dict]:
         current = self.token_service.count_messages(messages)
         if current <= max_tokens:
@@ -295,12 +366,17 @@ class CompressionService:
         other_msgs = [m for m in messages if m.get("role") != "system"]
 
         while current > max_tokens and other_msgs:
-            removed = other_msgs.pop(0)
+            removable = _removable_index(other_msgs, preserve)
+            if removable is None:
+                break
+            removed = other_msgs.pop(removable)
             current = self.token_service.count_messages(system_msgs + other_msgs)
             operations.append(f"trimmed_message:{removed.get('role')}")
 
         if current > max_tokens:
             for msg in reversed(other_msgs):
+                if msg is preserve:
+                    continue
                 content = msg.get("content", "")
                 if isinstance(content, str) and len(content) > 500:
                     msg["content"] = truncate_smart(content, 500, preserve_end=True)
@@ -310,3 +386,28 @@ class CompressionService:
                         break
 
         return system_msgs + other_msgs
+
+
+def _restore_snapshot(pinned: dict, snapshot: dict) -> None:
+    pinned.clear()
+    pinned.update(copy.deepcopy(snapshot))
+
+
+def _pinned_would_be_summarized(
+    messages: list[dict], pinned: dict | None, keep_recent: int
+) -> bool:
+    if pinned is None or not any(message is pinned for message in messages):
+        return False
+    others = [message for message in messages if message.get("role") != "system"]
+    if len(messages) <= keep_recent + 1 or len(others) <= keep_recent:
+        return False
+    return all(message is not pinned for message in others[-keep_recent:])
+
+
+def _removable_index(messages: list[dict], preserve: dict | None) -> int | None:
+    if preserve is None:
+        return 0 if messages else None
+    for index, message in enumerate(messages):
+        if message is not preserve:
+            return index
+    return None

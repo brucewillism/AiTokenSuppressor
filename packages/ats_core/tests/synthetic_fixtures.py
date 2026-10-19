@@ -23,6 +23,49 @@ PYTHON_SNIPPET = (
 
 SHORT_USER = "Quanto custa o widget sintético azul?"
 
+REPEATED_LINE = "linha sintética repetida do pedido final do widget azul"
+
+FINAL_QUESTION = (
+    "MUST return only JSON.\n"
+    f"{REPEATED_LINE}\n"
+    f"{REPEATED_LINE}\n"
+    "Qual é o total sintético do widget azul?"
+)
+
+NEAR_OLDER_QUESTION = "qual  é o total sintético do widget azul?"
+NEAR_NEWER_QUESTION = "Qual é o total sintético do widget azul?"
+
+LONG_FINAL_USER = (
+    "Pedido final sintético do widget azul, preservar por inteiro. "
+    + ("detalhe sintético " * 80)
+)
+
+
+def repeated_final_question() -> list[dict]:
+    return [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": FINAL_QUESTION},
+        {"role": "assistant", "content": "O total sintético é 4."},
+        {"role": "user", "content": FINAL_QUESTION},
+    ]
+
+
+def near_duplicate_final_question() -> list[dict]:
+    return [
+        {"role": "user", "content": NEAR_OLDER_QUESTION},
+        {"role": "assistant", "content": "O total sintético é 4."},
+        {"role": "user", "content": NEAR_NEWER_QUESTION},
+    ]
+
+
+def long_final_budget_messages() -> list[dict]:
+    return [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": "contexto antigo do widget " * 40},
+        {"role": "assistant", "content": "resposta antiga do widget " * 40},
+        {"role": "user", "content": LONG_FINAL_USER},
+    ]
+
 
 def conversation(copies: int = 8) -> list[dict]:
     messages = [{"role": "system", "content": SYSTEM}]

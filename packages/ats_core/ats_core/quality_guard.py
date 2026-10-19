@@ -33,6 +33,14 @@ OUTPUT_CONTRACT_PATTERNS = [
 SYSTEM_PROMPT_MIN_LENGTH = 20
 
 
+def _last_user_index(messages: list[dict]) -> int | None:
+    for index in range(len(messages) - 1, -1, -1):
+        message = messages[index]
+        if isinstance(message, dict) and message.get("role") == "user":
+            return index
+    return None
+
+
 class QualityGuardService:
     def __init__(self) -> None:
         self.relevance = RelevanceService()
@@ -119,7 +127,28 @@ class QualityGuardService:
         report.quality_preserved = len(report.violations) == 0 or all(
             "restored" in v for v in report.violations
         )
-        return system_msgs + other_msgs, report
+        return self.anchor_final_user_turn(original, system_msgs + other_msgs), report
+
+    def anchor_final_user_turn(self, original: list[dict], compressed: list[dict]) -> list[dict]:
+        """Keep the final user turn verbatim and last when it closed the prompt.
+
+        Identity is the same dict that entered compression. A rewritten copy is not
+        invented here; the compressor restores bytes on that object before merging.
+        """
+        index = _last_user_index(original)
+        if index is None:
+            return compressed
+        source = original[index]
+        was_last = index == len(original) - 1
+        present = any(message is source for message in compressed)
+        if was_last:
+            if present:
+                return [message for message in compressed if message is not source] + [source]
+            return [*compressed, source]
+        if present:
+            return compressed
+        spot = min(index, len(compressed))
+        return [*compressed[:spot], source, *compressed[spot:]]
 
     def validate_compression(
         self,
