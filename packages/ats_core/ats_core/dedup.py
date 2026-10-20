@@ -20,28 +20,48 @@ class DeduplicationService:
     def fingerprint_content(self, content: str) -> str:
         return fingerprint(content)
 
-    def deduplicate_messages(self, messages: list[dict[str, Any]]) -> tuple[list[dict], list[str]]:
+    def deduplicate_messages(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        preserve: dict[str, Any] | None = None,
+    ) -> tuple[list[dict], list[str]]:
+        """Remove duplicatas idênticas ou quase idênticas, mantendo a ocorrência mais nova.
+
+        `preserve` nunca é descartada (o turno final do usuário). Cópias anteriores
+        do mesmo texto continuam caindo.
+        """
         seen_hashes: set[str] = set()
         seen_fingerprints: set[str] = set()
+        drop = [False] * len(messages)
+
+        for index in range(len(messages) - 1, -1, -1):
+            message = messages[index]
+            content = message.get("content", "")
+            if not isinstance(content, str):
+                continue
+
+            digest = self.hash_content(content)
+            fp = self.fingerprint_content(content)
+            if message is preserve:
+                seen_hashes.add(digest)
+                seen_fingerprints.add(fp)
+                continue
+
+            if digest in seen_hashes or fp in seen_fingerprints:
+                drop[index] = True
+                continue
+
+            seen_hashes.add(digest)
+            seen_fingerprints.add(fp)
+
         deduplicated: list[dict] = []
         operations: list[str] = []
-
-        for msg in messages:
-            content = msg.get("content", "")
-            if not isinstance(content, str):
-                deduplicated.append(msg)
+        for index, message in enumerate(messages):
+            if drop[index]:
+                operations.append(f"removed_duplicate_message:{message.get('role', 'unknown')}")
                 continue
-
-            h = self.hash_content(content)
-            fp = self.fingerprint_content(content)
-
-            if h in seen_hashes or fp in seen_fingerprints:
-                operations.append(f"removed_duplicate_message:{msg.get('role', 'unknown')}")
-                continue
-
-            seen_hashes.add(h)
-            seen_fingerprints.add(fp)
-            deduplicated.append(msg)
+            deduplicated.append(message)
 
         return deduplicated, operations
 

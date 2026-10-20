@@ -12,7 +12,7 @@ from ats_core.suppressor import CompressionResult, TokenSuppressor
 from ats_core.token_service import TokenService
 from ats_core.types import CompressionStrategy, ContentType
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "__version__",

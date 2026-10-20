@@ -226,7 +226,9 @@ pytest packages/ats_core/tests -q
 
 ## Biblioteca `ats_core`
 
-O modo canônico do contrato v1.2 é a biblioteca em processo na E.D.I.T.H. (`TokenSuppressor().compress(...)`). O pacote versionado fica em `packages/ats_core` (versão **0.1.0**, `ats_core.__version__`). Ele não abre banco, Redis, Ollama, LiteLLM nem provedor. A API deste repositório importa esse código; Ollama continua só no serviço, injetado como port.
+O modo canônico do contrato v1.2 é a biblioteca em processo na E.D.I.T.H. (`TokenSuppressor().compress(...)`). O pacote versionado fica em `packages/ats_core` (versão **0.1.1**, `ats_core.__version__`). Ele não abre banco, Redis, Ollama, LiteLLM nem provedor. A API deste repositório importa esse código; Ollama continua só no serviço, injetado como port.
+
+Na 0.1.1 a última mensagem de `user` permanece literal e, quando fecha o prompt, continua sendo a última. A deduplicação fica com a cópia mais nova. O histórico está em `packages/ats_core/CHANGELOG.md`. Depois do merge, a E.D.I.T.H. precisa repinar o SHA desse commit.
 
 Para a E.D.I.T.H. fixar um commit:
 
@@ -236,7 +238,7 @@ pip install 'ats_core @ git+https://github.com/brucewillism/AiTokenSuppressor@<s
 
 `<sha>` é o commit completo de 40 caracteres. Não use a branch `main` como pin.
 
-A tag `v0.1.0` marca esse pacote. Crie e publique a tag a partir do commit que contém `packages/ats_core` em 0.1.0:
+A tag `v0.1.0` marca a extração inicial. A versão atual da biblioteca é a 0.1.1; o pin da E.D.I.T.H. continua sendo o SHA, não a tag. A tag antiga, se ainda for preciso publicá-la, sai do commit em que `packages/ats_core` está em 0.1.0:
 
 ```bash
 git tag -a v0.1.0 <sha> -m "ats_core 0.1.0"

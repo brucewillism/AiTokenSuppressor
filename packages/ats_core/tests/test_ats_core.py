@@ -13,17 +13,27 @@ import ats_core
 from ats_core import (
     CompressionService,
     CompressionStrategy,
+    DeduplicationService,
+    QualityGuardService,
     TokenSuppressor,
     __version__,
 )
 from tests.synthetic_fixtures import (
     DUPLICATE_LINE,
+    FINAL_QUESTION,
+    LONG_FINAL_USER,
+    NEAR_NEWER_QUESTION,
+    NEAR_OLDER_QUESTION,
     PYTHON_SNIPPET,
+    REPEATED_LINE,
     SENTINEL,
     SHORT_USER,
     SYSTEM,
     VERBOSE_USER,
     conversation,
+    long_final_budget_messages,
+    near_duplicate_final_question,
+    repeated_final_question,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,9 +81,9 @@ class _FakeModel:
 
 def test_version_matches_pyproject():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert __version__ == "0.1.0"
-    assert ats_core.__version__ == "0.1.0"
-    assert pyproject["project"]["version"] == "0.1.0"
+    assert __version__ == "0.1.1"
+    assert ats_core.__version__ == "0.1.1"
+    assert pyproject["project"]["version"] == "0.1.1"
 
 
 def test_public_api_is_explicit():
@@ -163,6 +173,9 @@ def test_duplicate_synthetic_messages_collapse():
     )
     users = [item for item in result.messages if item.get("role") == "user"]
     assert len(users) == 1
+    assert users[0]["content"] == DUPLICATE_LINE
+    assert result.messages[-1]["role"] == "user"
+    assert result.messages[-1]["content"] == DUPLICATE_LINE
     assert any(op.startswith("removed_duplicate_message:") for op in result.operations)
 
 
@@ -240,6 +253,151 @@ def test_facade_matches_engine_messages():
     )
     assert result.messages == compressed
     assert result.operations == operations
+
+
+def test_dedup_keeps_newest_message_and_drops_the_older_copy():
+    text = "Qual é o total sintético do widget azul?"
+    older = {"role": "user", "content": text, "name": "older"}
+    newer = {"role": "user", "content": text.upper(), "name": "newer"}
+    deduped, operations = DeduplicationService().deduplicate_messages(
+        [older, {"role": "assistant", "content": "O total sintético é 4."}, newer]
+    )
+    assert [item.get("name") for item in deduped if item.get("role") == "user"] == ["newer"]
+    assert deduped[-1] is newer
+    assert deduped[-1]["content"] == text.upper()
+    assert any(op == "removed_duplicate_message:user" for op in operations)
+    assert all(item.get("name") != "older" for item in deduped)
+
+
+def test_repeated_final_question_stays_last_and_verbatim():
+    result = _run(
+        TokenSuppressor().compress(
+            repeated_final_question(),
+            strategy="balanced",
+            use_ollama=False,
+        )
+    )
+    assert result.messages[-1]["role"] == "user"
+    assert result.messages[-1]["content"] == FINAL_QUESTION
+    assert sum(item.get("content") == FINAL_QUESTION for item in result.messages) == 1
+    assert result.messages[-1]["content"].count(REPEATED_LINE) == 2
+    assert any(item.get("role") == "assistant" for item in result.messages)
+    assert any(op.startswith("removed_duplicate_message:user") for op in result.operations)
+
+    near = _run(
+        TokenSuppressor().compress(
+            near_duplicate_final_question(),
+            strategy="fast",
+            use_ollama=False,
+        )
+    )
+    assert near.messages[-1] == {"role": "user", "content": NEAR_NEWER_QUESTION}
+    assert all(item.get("content") != NEAR_OLDER_QUESTION for item in near.messages)
+
+
+def test_budget_trimming_keeps_long_final_user_message():
+    assert len(LONG_FINAL_USER) > 500
+    result = _run(
+        TokenSuppressor().compress(
+            long_final_budget_messages(),
+            strategy="fast",
+            use_ollama=False,
+            max_tokens=16,
+        )
+    )
+    assert result.messages[-1]["role"] == "user"
+    assert result.messages[-1]["content"] == LONG_FINAL_USER
+    assert sum(item.get("content") == LONG_FINAL_USER for item in result.messages) == 1
+    assert not result.messages[-1]["content"].startswith("...")
+    assert any(item.get("role") == "system" and item.get("content") == SYSTEM for item in result.messages)
+    assert any(op.startswith("trimmed_message:user") for op in result.operations)
+    assert any(op.startswith("trimmed_message:assistant") for op in result.operations)
+    assert all("contexto antigo do widget" not in str(item.get("content", "")) for item in result.messages)
+    assert all("resposta antiga do widget" not in str(item.get("content", "")) for item in result.messages)
+
+
+def test_all_strategies_preserve_final_user_without_ollama():
+    model = _FakeModel()
+    for strategy in CompressionStrategy:
+        result = _run(
+            TokenSuppressor(model=model).compress(
+                copy.deepcopy(repeated_final_question()),
+                strategy=strategy,
+                use_ollama=False,
+            )
+        )
+        assert result.messages[-1]["role"] == "user", strategy.value
+        assert result.messages[-1]["content"] == FINAL_QUESTION, strategy.value
+        assert result.messages[-1]["content"].count(REPEATED_LINE) == 2, strategy.value
+        assert any(item.get("role") == "assistant" for item in result.messages), strategy.value
+    assert model.calls == []
+
+
+def test_earlier_user_text_still_shrinks_when_final_turn_is_pinned():
+    final = "Qual é o total sintético do widget azul?"
+    result = _run(
+        TokenSuppressor().compress(
+            [
+                {"role": "user", "content": VERBOSE_USER},
+                {"role": "assistant", "content": "ok"},
+                {"role": "user", "content": final},
+            ],
+            strategy="fast",
+            use_ollama=False,
+        )
+    )
+    assert result.messages[-1]["content"] == final
+    earlier = [
+        item["content"]
+        for item in result.messages
+        if item.get("role") == "user" and item.get("content") != final
+    ]
+    assert earlier
+    assert "Please note that" not in earlier[0]
+    assert len(earlier[0]) < len(VERBOSE_USER)
+
+
+def test_last_user_stays_verbatim_before_a_trailing_assistant():
+    final_user = "Qual é o total sintético do widget azul? " + ("detalhe " * 30)
+    trailing = "Resposta sintética que precisa permanecer depois do usuário."
+    messages = [{"role": "system", "content": SYSTEM}]
+    for index in range(8):
+        messages.append(
+            {
+                "role": "user" if index % 2 == 0 else "assistant",
+                "content": f"turno {index} {VERBOSE_USER}",
+            }
+        )
+    messages[-2]["content"] = final_user
+    messages[-1]["content"] = trailing
+    model = _FakeModel()
+    result = _run(
+        TokenSuppressor(model=model).compress(
+            messages,
+            strategy="balanced",
+            use_ollama=True,
+        )
+    )
+    assert "summarize" in model.calls
+    user_at = next(index for index, item in enumerate(result.messages) if item.get("content") == final_user)
+    assistant_at = next(
+        index for index, item in enumerate(result.messages) if item.get("content") == trailing
+    )
+    assert user_at < assistant_at
+    assert result.messages[-1]["content"] == trailing
+
+
+def test_quality_guard_moves_reordered_final_user_back_to_the_end():
+    final = {"role": "user", "content": FINAL_QUESTION}
+    original = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "assistant", "content": "O total sintético é 4."},
+        final,
+    ]
+    compressed = [final, {"role": "assistant", "content": "O total sintético é 4."}]
+    merged, _report = QualityGuardService().merge_with_compressed(original, compressed)
+    assert merged[-1] is final
+    assert merged[-1]["content"] == FINAL_QUESTION
 
 
 def test_small_prompt_resolves_to_fast_without_settings():
