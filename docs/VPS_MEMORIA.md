@@ -1,5 +1,9 @@
 # VPS com pouca RAM (~4 GB)
 
+O serviço ATS na VPS foi desligado de propósito e este repositório não faz deploy automático. A E.D.I.T.H. consome `ats_core` como biblioteca. O texto abaixo é o runbook antigo de memória, não a operação atual.
+
+
+
 ## Stack mínimo (recomendado)
 
 Só sobem **redis + api + frontend**. Celery, Flower, LiteLLM, Prometheus e Grafana ficam em profiles opcionais.

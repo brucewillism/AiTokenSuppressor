@@ -1,5 +1,7 @@
 # Claude Code (VS Code / Cursor) + AI Token Suppressor
 
+O serviço ATS na VPS foi desligado de propósito e não é publicado automaticamente. A E.D.I.T.H. consome `ats_core` como biblioteca. O texto abaixo descreve a integração antiga com o proxy HTTP.
+
 A extensão **Claude Code** usa a API Anthropic (`POST /v1/messages`), não OpenAI. O ATS expõe esse endpoint com compressão antes do LLM.
 
 ## URL base

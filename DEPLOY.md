@@ -1,10 +1,16 @@
 # Deploy na VPS
 
-O AI Token Suppressor sobe só em loopback nesta VPS. Nada deste repositório escuta em `0.0.0.0`. O acesso de fora da máquina é um túnel SSH até `127.0.0.1`. O Caddy do host continua exclusivo do ConsumoEsperto.
+**O serviço ATS na VPS foi desligado de propósito. Não há deploy automático.**
+
+A E.D.I.T.H. consome o pacote `ats_core` como biblioteca, no processo dela. Push na `main` e pull request disparam só o workflow `CI` (pytest de `ats_core` e validação de `docker-compose.prod.yml`). `.github/workflows/deploy.yml` não observa `push` nem `workflow_run`. O único gatilho que restou é `workflow_dispatch`, com aviso no nome do workflow e na descrição do input `ref`. Dispará-lo publica a stack de novo na VPS. Esse não é o caminho operacional.
+
+O texto abaixo descreve a stack que existia na VPS e o disparo manual, para leitura. Não use este runbook para religar o serviço no fluxo normal.
+
+O AI Token Suppressor, quando alguém dispara o workflow manual, sobe só em loopback nesta VPS. Nada deste repositório escuta em `0.0.0.0`. O acesso de fora da máquina é um túnel SSH até `127.0.0.1`. O Caddy do host continua exclusivo do ConsumoEsperto.
 
 O arquivo usado no servidor é `docker-compose.prod.yml`. O `docker-compose.yml` da raiz permanece para desenvolvimento local e não deve ser o comando de produção.
 
-Stack automática: Postgres, Redis, API e frontend. Celery, Flower, LiteLLM, Prometheus e Grafana ficam em profiles e não sobem no deploy automático. Não instale Postgres no host.
+Stack do compose padrão, se o disparo manual rodar: Postgres, Redis, API e frontend. Celery, Flower, LiteLLM, Prometheus e Grafana ficam em profiles e não sobem nesse disparo. Não instale Postgres no host.
 
 | Serviço | Bind no host | Porta do container | Profile |
 |---|---|---|---|
@@ -108,7 +114,7 @@ docker compose -f docker-compose.prod.yml --profile monitoring up -d
 docker compose -f docker-compose.prod.yml --profile litellm up -d
 ```
 
-O workflow automático não passa `--profile`.
+O disparo manual não passa `--profile`.
 
 ## Variáveis do `.env`
 
@@ -222,11 +228,11 @@ No repositório, em Actions secrets:
 
 A host key vem de um `ssh-keyscan` que você confere com o fingerprint visto no console da VPS. Grave o resultado em `VPS_KNOWN_HOSTS`. O workflow usa `StrictHostKeyChecking=yes` e esse arquivo. Não use `StrictHostKeyChecking=no`.
 
-O job automático só corre depois que o workflow `CI` termina com sucesso num push da `main`. O `CI` valida `docker-compose.prod.yml`. Enquanto o workflow de deploy não estiver na `main`, o `workflow_run` não dispara. O primeiro deploy, e qualquer rollback, é manual.
+Não existe job automático depois do `CI`. O workflow `CI` continua em push da `main` e em pull request: valida `docker-compose.prod.yml` e roda pytest de `ats_core`. O arquivo de deploy não escuta `workflow_run`. Publicar na VPS exige abrir Actions e disparar o workflow manual, cujo nome avisa que o serviço foi desligado.
 
-## Rollback
+## Disparo manual
 
-No GitHub: Actions → Deploy → Run workflow. No input `ref`, informe o SHA completo de 40 caracteres hexadecimais que já está no histórico da `main`. O job faz `git fetch` desse SHA, `git reset --hard` e sobe o compose de novo. Se o healthcheck não ficar saudável, o job falha e o concurrency impede outro deploy em paralelo.
+No GitHub: Actions → o workflow com aviso de serviço desligado → Run workflow. No input `ref`, informe o SHA completo de 40 caracteres hexadecimais. O job faz `git fetch` desse SHA, `git reset --hard` e sobe o compose de novo. Se o healthcheck não ficar saudável, o job falha e o concurrency impede outro deploy em paralelo. Isso religa o serviço. A operação corrente é a E.D.I.T.H. consumir `ats_core` como biblioteca, sem esse disparo.
 
 `ref` vazio faz o deploy do SHA em que o workflow está rodando. Branch, tag curta e SHA abreviado são recusados. O SHA precisa conter `docker-compose.prod.yml`: o job faz reset para esse commit e sobe esse compose.
 
@@ -252,12 +258,8 @@ api.dominio.exemplo {
 }
 ```
 
-## O que conferir antes de confiar no automático
+## O que este repositório faz hoje
 
-1. Usuário `deploy` no grupo `docker`, com `docker` sem sudo.
-2. Clone em `/home/bruce/apps/AiTokenSuppressor`, remote SSH e deploy key de leitura.
-3. `.env` com `chmod 600`, dono `deploy`, e os nomes da lista acima preenchidos.
-4. `POSTGRES_PASSWORD` no `.env`. O banco `ats_db` sobe no compose, sem Postgres instalado no host.
-5. Secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` e, se a porta não for 22, `VPS_PORT`.
-6. `curl` instalado na VPS. O job chama `http://127.0.0.1:8105/health` e `http://127.0.0.1:8100/health/live`.
-7. Workflow `CI` verde na `main` depois do merge. Em seguida, um `workflow_dispatch` do SHA que deve subir.
+1. O `CI` roda em push da `main` e em pull request. O job `pytest` testa `packages/ats_core`. Não há publicação na VPS nesse caminho.
+2. A E.D.I.T.H. consome `ats_core` como biblioteca, pinada por SHA. O serviço na VPS permanece desligado.
+3. O `workflow_dispatch` manual ainda existe, com aviso no nome. Usá-lo exige os secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` e, se a porta não for 22, `VPS_PORT`, mais o clone, o `.env` em modo `600` e o `curl` na máquina. Esse disparo não faz parte da operação normal.
