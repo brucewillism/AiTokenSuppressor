@@ -1,17 +1,23 @@
-name: Deploy
+# AVISO: o serviço ATS na VPS foi desligado de propósito.
+# A E.D.I.T.H. consome somente o pacote ats_core, em processo.
+# Este workflow não dispara em push nem quando o CI termina com sucesso.
+# O único gatilho é workflow_dispatch. Dispará-lo publica a stack na VPS de novo.
+# O CI (pytest em push e pull request) continua em .github/workflows/ci.yml.
+
+name: "AVISO: deploy manual na VPS (serviço desligado; sem automático)"
 
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: SHA completo (40 hex) para deploy ou rollback. Vazio usa o SHA desta execução.
+        description: >-
+          AVISO: o serviço ATS na VPS foi desligado de propósito e a E.D.I.T.H.
+          consome só a biblioteca ats_core. Este disparo manual publica a stack
+          de novo. Não é o caminho operacional. SHA completo (40 hex) para
+          deploy ou rollback; vazio usa o SHA desta execução.
         required: false
         type: string
         default: ""
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
 
 permissions:
   contents: read
@@ -22,31 +28,20 @@ concurrency:
 
 jobs:
   pytest:
-    name: Testar ats_core antes do deploy
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'main')
+    name: Testar ats_core antes do deploy manual
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Resolver SHA
         id: rev
         env:
-          EVENT_NAME: ${{ github.event_name }}
           INPUT_REF: ${{ inputs.ref }}
           DISPATCH_SHA: ${{ github.sha }}
-          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            REF="${INPUT_REF:-}"
-            if [ -z "$REF" ]; then
-              REF="$DISPATCH_SHA"
-            fi
-          else
-            REF="$RUN_SHA"
+          REF="${INPUT_REF:-}"
+          if [ -z "$REF" ]; then
+            REF="$DISPATCH_SHA"
           fi
           if ! printf '%s' "$REF" | grep -Eq '^[0-9a-fA-F]{40}$'; then
             echo "O ref precisa ser um SHA de 40 caracteres hexadecimais."
@@ -71,49 +66,28 @@ jobs:
           python -m pip install "./packages/ats_core[test]"
           python -m pytest packages/ats_core/tests -q
 
-  recusar-ci-vermelho:
-    name: Recusar CI vermelho na main
-    if: >-
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion != 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main'
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Falhar
-        run: |
-          echo "O CI da main terminou como ${{ github.event.workflow_run.conclusion }}."
-          exit 1
-
   deploy:
-    name: Deploy na VPS
+    name: "AVISO: publicar na VPS (só disparo manual)"
     needs: pytest
-    if: >-
-      always() &&
-      needs.pytest.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'push' &&
-        github.event.workflow_run.head_branch == 'main'))
+    if: needs.pytest.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
+      - name: Aviso operacional
+        run: |
+          echo "AVISO: o serviço ATS na VPS foi desligado de propósito."
+          echo "A E.D.I.T.H. consome ats_core como biblioteca. Este job só existe porque alguém disparou o workflow manualmente."
+
       - name: Resolver SHA
         id: rev
         env:
-          EVENT_NAME: ${{ github.event_name }}
           INPUT_REF: ${{ inputs.ref }}
           DISPATCH_SHA: ${{ github.sha }}
-          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            REF="${INPUT_REF:-}"
-            if [ -z "$REF" ]; then
-              REF="$DISPATCH_SHA"
-            fi
-          else
-            REF="$RUN_SHA"
+          REF="${INPUT_REF:-}"
+          if [ -z "$REF" ]; then
+            REF="$DISPATCH_SHA"
           fi
           if ! printf '%s' "$REF" | grep -Eq '^[0-9a-fA-F]{40}$'; then
             echo "O ref precisa ser um SHA de 40 caracteres hexadecimais."

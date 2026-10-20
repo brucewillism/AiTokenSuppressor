@@ -2,6 +2,12 @@
 
 Camada intermediária inteligente entre aplicações (Cursor, VSCode, APIs, agentes, bots) e modelos LLM (Claude, OpenAI, Gemini, OpenRouter) para reduzir drasticamente o consumo de tokens.
 
+## Operação
+
+O serviço HTTP na VPS foi desligado de propósito. Este repositório não faz deploy automático. Push na `main` e pull request disparam só o workflow `CI`: pytest de `packages/ats_core` e validação do compose de produção.
+
+A E.D.I.T.H. consome o pacote `ats_core` como biblioteca, no processo dela (`TokenSuppressor().compress(...)`). O arquivo `.github/workflows/deploy.yml` ficou apenas com `workflow_dispatch` manual e um aviso no nome e na descrição do input. Disparar esse workflow publica a stack na VPS de novo; esse não é o caminho operacional.
+
 ## Objetivo
 
 Reduzir uso de tokens em **60% a 95%** sem perda significativa de qualidade, através de:
@@ -226,7 +232,7 @@ pytest packages/ats_core/tests -q
 
 ## Biblioteca `ats_core`
 
-O modo canônico do contrato v1.2 é a biblioteca em processo na E.D.I.T.H. (`TokenSuppressor().compress(...)`). O pacote versionado fica em `packages/ats_core` (versão **0.1.1**, `ats_core.__version__`). Ele não abre banco, Redis, Ollama, LiteLLM nem provedor. A API deste repositório importa esse código; Ollama continua só no serviço, injetado como port.
+O modo canônico do contrato v1.2 é a biblioteca em processo na E.D.I.T.H. (`TokenSuppressor().compress(...)`). O serviço na VPS está desligado e não é publicado automaticamente: a E.D.I.T.H. instala este pacote e executa a compressão no processo dela. O pacote versionado fica em `packages/ats_core` (versão **0.1.1**, `ats_core.__version__`). Ele não abre banco, Redis, Ollama, LiteLLM nem provedor. A API deste repositório importa esse código; Ollama continua só no serviço, injetado como port.
 
 Na 0.1.1 a última mensagem de `user` permanece literal e, quando fecha o prompt, continua sendo a última. A deduplicação fica com a cópia mais nova. O histórico está em `packages/ats_core/CHANGELOG.md`. Depois do merge, a E.D.I.T.H. precisa repinar o SHA desse commit.
 

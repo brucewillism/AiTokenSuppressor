@@ -2,9 +2,10 @@
 
 **Status:** Aceito — pacote `ats_core` 0.1.0 extraído (etapa 1). Etapas 2–6 seguem abertas.  
 **Data:** 2026-09-07  
-**Atualização:** 2026-10-19  
+**Atualização:** 2026-10-20  
 **Decisão A (JUSTIFICATION):** biblioteca — FECHADA  
-**Contrato:** v1.2. O nome do pacote é `ats_core` (`TokenSuppressor().compress(...)`, §11.2).
+**Contrato:** v1.2. O nome do pacote é `ats_core` (`TokenSuppressor().compress(...)`, §11.2).  
+**Operação:** o serviço na VPS foi desligado de propósito. Não há deploy automático. A E.D.I.T.H. consome `ats_core` como biblioteca em processo. `.github/workflows/deploy.yml` aceita só `workflow_dispatch` manual, com aviso no nome.
 
 ---
 

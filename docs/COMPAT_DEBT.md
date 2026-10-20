@@ -12,6 +12,8 @@ Fonte: `docs/ECOSYSTEM_CONTRACT.md` (SHA-256 `379ba1462c31185f7cf8c4e9e417eb20c8
 
 O pacote `ats_core` 0.1.0 está em `packages/ats_core`. A ponte de modo serviço continua até a E.D.I.T.H. trocar o código vendado por essa dependência pinada por SHA e o tráfego HTTP chegar a zero. Este registro não declara `contract_version: "1.2"` no health.
 
+O processo do serviço na VPS foi desligado de propósito. Push e pull request não publicam essa stack: o CI só roda pytest e a validação do compose. A E.D.I.T.H. consome `ats_core` como biblioteca no processo dela. O código HTTP listado na ponte permanece neste repositório; a saída da ponte segue a coluna «Para sair».
+
 ## Pontes da §13 que não se aplicam aqui
 
 Conferidas no código em 11/10/2026. Não entram na tabela acima.
